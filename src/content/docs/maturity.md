@@ -1,16 +1,15 @@
 ﻿---
 title: Maturity Levels
-description: Specification maturity stages in the Sirraya ecosystem
 ---
 
 # Maturity Levels
 
 Specifications progress through defined maturity stages.
 
-| Level | Badge | Description |
-|-------|-------|-------------|
-| Concept | Concept | Initial exploration |
-| Experimental | Experimental | Early testing |
-| Working | Working | Active development |
-| Stable | Stable | Broadly reviewed |
-| Recommended | Recommended | Production-ready |
+| Level | Description |
+|-------|-------------|
+| Concept | Initial exploration and ideation |
+| Experimental | Early testing and validation |
+| Working | Active development and iteration |
+| Stable | Broadly reviewed and tested |
+| Recommended | Production-ready specification |

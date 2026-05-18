@@ -4,4 +4,4 @@ title: Security Policy
 
 # Security Policy
 
-Governance documentation coming soon.
+Security disclosure and vulnerability reporting process.

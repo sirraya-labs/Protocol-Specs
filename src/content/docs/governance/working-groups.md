@@ -4,4 +4,4 @@ title: Working Groups
 
 # Working Groups
 
-Governance documentation coming soon.
+Active working groups across Sirraya Labs protocols.
