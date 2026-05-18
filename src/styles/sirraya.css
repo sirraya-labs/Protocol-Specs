@@ -1,0 +1,67 @@
+/* src/styles/sirraya.css */
+
+/* Inter font via Google Fonts - add this to head */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Force sidebar text to be visible in light mode */
+:root {
+  --sl-color-text: #0a0a0a;
+  --sl-color-text-accent: #000000;
+  --sl-color-bg-sidebar: #ffffff;
+  --sl-color-bg-nav: #0a0a0a;
+}
+
+/* Light mode - sidebar links */
+nav.sidebar a,
+.sidebar a,
+[data-theme='light'] nav a {
+  color: #262626;
+}
+
+nav.sidebar a:hover,
+.sidebar a:hover {
+  color: #0a0a0a;
+  background: #f5f5f5;
+}
+
+nav.sidebar a[aria-current="page"],
+.sidebar a[aria-current="page"] {
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+/* Dark mode */
+[data-theme='dark'] {
+  --sl-color-text: #e5e5e5;
+  --sl-color-bg-sidebar: #0a0a0a;
+}
+
+[data-theme='dark'] nav.sidebar a,
+[data-theme='dark'] .sidebar a {
+  color: #a3a3a3;
+}
+
+[data-theme='dark'] nav.sidebar a:hover {
+  color: #ffffff;
+}
+
+[data-theme='dark'] nav.sidebar a[aria-current="page"] {
+  color: #ffffff;
+}
+
+/* Header stays black */
+.header {
+  background: #0a0a0a;
+}
+
+.header * {
+  color: #ffffff;
+}
+
+/* Body font */
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+h1 { font-weight: 700; }
+h2 { font-weight: 600; }
