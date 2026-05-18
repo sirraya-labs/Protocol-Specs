@@ -1,67 +1,51 @@
-/* src/styles/sirraya.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-/* Inter font via Google Fonts - add this to your head */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-/* Force sidebar text to be visible in light mode */
 :root {
-  --sl-color-text: #0a0a0a;
-  --sl-color-text-accent: #000000;
-  --sl-color-bg-sidebar: #ffffff;
-  --sl-color-bg-nav: #0a0a0a;
+  --sl-font: 'Inter', system-ui, sans-serif;
+
+  --sl-text-5xl: 2.5rem;
+  --sl-text-4xl: 2rem;
+  --sl-text-3xl: 1.5rem;
+  --sl-text-2xl: 1.25rem;
+  --sl-text-xl: 1.05rem;
+  --sl-text-base: 0.95rem;
+  --sl-text-sm: 0.875rem;
+
+  --sl-color-accent: #2563eb;
+  --sl-color-accent-high: #1d4ed8;
+
+  --sl-sidebar-width: 19rem;
 }
 
-/* Light mode - sidebar links */
-nav.sidebar a,
-.sidebar a,
-[data-theme='light'] nav a {
-  color: #262626;
+/* Cleaner typography */
+body {
+  font-family: var(--sl-font);
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
-nav.sidebar a:hover,
-.sidebar a:hover {
-  color: #0a0a0a;
-  background: #f5f5f5;
-}
-
-nav.sidebar a[aria-current="page"],
-.sidebar a[aria-current="page"] {
-  color: #0a0a0a;
+/* Headings */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
   font-weight: 600;
 }
 
-/* Dark mode */
-[data-theme='dark'] {
-  --sl-color-text: #e5e5e5;
-  --sl-color-bg-sidebar: #0a0a0a;
+/* Sidebar */
+.sidebar-content a {
+  font-size: 0.92rem;
 }
 
-[data-theme='dark'] nav.sidebar a,
-[data-theme='dark'] .sidebar a {
-  color: #a3a3a3;
+/* Active navigation */
+.sidebar-content a[aria-current="page"] {
+  font-weight: 600;
 }
 
-[data-theme='dark'] nav.sidebar a:hover {
-  color: #ffffff;
+/* Better content width */
+.sl-markdown-content {
+  max-width: 78ch;
 }
 
-[data-theme='dark'] nav.sidebar a[aria-current="page"] {
-  color: #ffffff;
+/* Cleaner tables */
+table {
+  font-size: 0.92rem;
 }
-
-/* Header stays black */
-.header {
-  background: #0a0a0a;
-}
-
-.header * {
-  color: #ffffff;
-}
-
-/* Body font */
-body {
-  font-family: 'Inter', -apple-system, sans-serif;
-}
-
-h1 { font-weight: 700; }
-h2 { font-weight: 600; }
