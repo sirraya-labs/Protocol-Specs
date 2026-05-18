@@ -67,6 +67,7 @@ export default defineConfig({
           label: 'DID-KR — Key Recovery',
           collapsed: true,
           items: [
+            { label: 'DID Recovery Spec', slug: 'did-kr/did-recovery' },
             { label: 'Recovery Methods', slug: 'did-kr/methods' },
             { label: 'Social Recovery', slug: 'did-kr/social' },
             { label: 'MPC Recovery', slug: 'did-kr/mpc' },
