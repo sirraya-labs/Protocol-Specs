@@ -6,7 +6,7 @@ export default defineConfig({
   site: 'https://specs.sirraya.org',
   integrations: [
     starlight({
-      title: 'Sirraya Protocol Specs',
+      title: 'Sirraya Labs',
       logo: {
         src: './src/assets/sirraya-logo.svg',
       },
