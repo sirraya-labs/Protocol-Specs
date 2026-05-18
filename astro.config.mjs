@@ -28,7 +28,7 @@ export default defineConfig({
           label: 'Overview',
           items: [
             { label: 'Home', slug: '' },
-            { label: 'Maturity Levels', slug: 'maturity' },
+            
           ],
         },
         {

@@ -1,50 +1,148 @@
 ﻿---
-title: Sirraya Protocol Specifications
-description: Zero-Trust Agent Execution Protocol Ecosystem
+title: Sirraya Labs — Protocol Specifications
+description: Decentralized Identity, Cryptographic Networking, and Zero-Trust Protocol Ecosystem
 ---
 
-Welcome to the **Sirraya Protocol Specifications** — the canonical home for the zero-trust agent execution protocol ecosystem.
+Welcome to the **Sirraya Labs Protocol Specifications** portal — the canonical home for open protocol work on decentralized identity, cryptographic networking, post-quantum security, and zero-trust agent execution.
 
-## What is Sirraya?
+## Projects & Protocols
 
-Sirraya is a protocol for **secure, verifiable agent execution** in zero-trust environments. It enables agent-to-agent communication, cryptographic trust, decentralized identity, and composable capabilities through a codon-based protocol.
+| Project | Type | Status |
+|---------|------|--------|
+| **UDNA** — Universal DID-Native Addressing | Protocol Spec | W3C Community Group |
+| **SCP** — Sirraya Codon Protocol | Protocol Spec | Working Draft |
+| **DID-KR** — Key Recovery Extension | Protocol Spec | Proposed W3C Work Item |
+| **Sirraya One** | Platform | Live (one.sirraya.org) |
+| **PQC Suite** | Implementation | CRYSTALS-Dilithium5 |
+| **ZKP Challenge-Response Auth** | Implementation | Active |
+| **QKD Stack** | Implementation | BB84 Decoy-State |
 
-## Structure
+---
 
-| Layer | Description |
-|-------|-------------|
-| **Core Layer** | Foundational concepts, threat model, trust model |
-| **Protocols** | Formal protocol documents (codons, A2A, envelopes) |
-| **Identity & Trust** | DID/VC integration, delegation, provenance |
-| **Runtime & Infra** | APIs, execution engine, verification services |
-| **Registries** | Machine-readable type registries |
-| **Implementations** | Reference implementations in Rust, JS, and more |
-| **Governance** | Contribution, versioning, security policies |
+## UDNA — Universal DID-Native Addressing
+
+**UDNA** establishes Decentralized Identifiers (DIDs) as first-class network primitives. Instead of addressing nodes by location (IP), endpoints are addressed by cryptographic identity [citation:1].
+
+Key goals:
+- DID → address resolution through distributed networks (DHTs, relays)
+- Secure, privacy-preserving, self-sovereign communications
+- Standards for protocol formats, handshake flows, and key lifecycle management
+- NAT traversal and relay fallback mechanisms [citation:1]
+
+UDNA integrates as a core primitive within the Sirraya Codon Protocol (SCP), providing a complete framework for identity-centric networking [citation:2].
+
+**Repository:** [github.com/w3c-cg/udna](https://github.com/w3c-cg/udna) [citation:1]
+
+**Status:** W3C Community Group incubation [citation:1]
+
+---
+
+## SCP — Sirraya Codon Protocol
+
+The **Sirraya Codon Protocol** is the core networking primitive enabling agent-to-agent communication with cryptographic trust. Codons serve as the fundamental unit of protocol interaction, combining intent, capability, and cryptographic proof into a single verifiable structure [citation:2].
+
+- Agent-to-agent communication protocol
+- Intent resolution and capability negotiation
+- Secure workflow transport
+- Zero-trust execution semantics
+
+---
+
+## DID-KR — Key Recovery Extension
+
+**DID-KR** introduces a recovery verification relationship for DID Documents with multiple recovery mechanisms [citation:7]:
+
+- **Social guardian-based recovery** using verifiable secret sharing and zero-knowledge proofs
+- **Deterministic seed-based recovery**
+- **MPC-mediated recovery** for enterprise deployments
+
+The goal is standardized, interoperable key recovery that preserves self-sovereign principles [citation:7].
+
+**Repository:** [github.com/sirraya-labs/did-kr](https://github.com/sirraya-labs/did-kr) [citation:7]
+
+**Status:** Proposed as W3C CCG work item [citation:7]
+
+---
+
+## Sirraya One
+
+**Sirraya One** is a live web platform for creating DIDs and issuing Verifiable Credentials, designed as a practical bridge between decentralized identity and legacy web systems [citation:10].
+
+Features:
+- Client-side key generation with passphrase-based encryption
+- Support for `did:key` and `did:web` methods
+- JWT-VC issuance and verification pipeline
+- RESTful APIs for integration
+- Passphrase-based encrypted key derivation for recovery [citation:10]
+
+**Live at:** [one.sirraya.org](https://one.sirraya.org) [citation:10]
+
+---
+
+## PQC Suite — Post-Quantum Cryptography
+
+Full implementation of **CRYSTALS-Dilithium5** within the W3C VC/DID framework, demonstrating production-ready PQC for decentralized identity [citation:6].
+
+Lifecycle support:
+- DID Document creation with Dilithium5 public keys
+- Credential issuance and signing with Dilithium5
+- Verifiable presentation with holder-binding secured via PQC [citation:8]
+
+**Status:** Implementation complete, NIST-standardized Dilithium [citation:6]
+
+---
+
+## ZKP Challenge-Response Authentication
+
+Design and implementation of a challenge-response authentication mechanism using **Zero-Knowledge Proof** constructions for privacy-preserving verification [citation:3].
+
+- Privacy-preserving authentication flows
+- Verifiable claims without data disclosure
+- Integration with existing auth infrastructure
+
+---
+
+## QKD Stack — Quantum Key Distribution
+
+Full software implementation of QKD protocols including [citation:3]:
+
+- Decoy-state BB84 protocol
+- Entropy estimation
+- Error correction
+- Security reporting
+
+Complemented by architectural work on post-quantum cryptography integration and hybrid trust models [citation:3].
+
+---
+
+## Threat Model & Security Engineering
+
+Cross-cutting security work across all Sirraya Labs protocols [citation:3]:
+
+- Protocol and network layer threat modeling
+- Replay attack analysis
+- Key compromise considerations
+- Registry trust assumptions
+- Gossip and replication model security
+- Cross-domain verification
+
+---
 
 ## Maturity Levels
 
-Each specification has a maturity indicator:
+| Level | Description |
+|-------|-------------|
+| **Concept** | Initial exploration and ideation |
+| **Experimental** | Early testing and validation |
+| **Working** | Active development and iteration |
+| **Stable** | Broadly reviewed and tested |
+| **Recommended** | Production-ready specification |
 
-- **Concept** — Initial exploration
-- **Experimental** — Early testing
-- **Working** — Active development
-- **Stable** — Broadly reviewed
-- **Recommended** — Production-ready
-
-## Status
-
-| Specification | Status |
-|--------------|--------|
-| Codons Specification | Stable |
-| Trust Chain | Stable |
-| Threat Model | Stable |
-| A2A Communication | Working |
-| DID Integration | Working |
-| Knowledge Lifecycle | Concept |
+---
 
 ## Quick Start
 
-- Start with the [Architecture Overview](/core/architecture)
-- Implement a client using the [Rust Runtime](/implementations/rust) or [JS SDK](/implementations/js-sdk)
-- Browse the [Intent Types registry](/registries/intents)
-- Read the [Codons Specification](/protocols/codons)
+- Read the [UDNA Technical Specification](https://zenodo.org/records/17053266) [citation:2]
+- Try [Sirraya One](https://one.sirraya.org) for DID/VC issuance [citation:10]
+- Review the [DID-KR proposal](https://github.com/sirraya-labs/did-kr) [citation:7]
+- Explore [UDNA at W3C](https://github.com/w3c-cg/udna) [citation:1]
