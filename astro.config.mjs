@@ -68,7 +68,7 @@ export default defineConfig({
           collapsed: true,
           items: [
             { label: 'DID Recovery Spec', slug: 'did-kr/did-recovery' },
-            { label: 'Recovery Methods', slug: 'did-kr/methods' },
+            { label: 'DID Threat Model', slug: 'did-kr/threat-model' },
             { label: 'Social Recovery', slug: 'did-kr/social' },
             { label: 'MPC Recovery', slug: 'did-kr/mpc' },
           ],
