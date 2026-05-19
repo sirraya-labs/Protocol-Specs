@@ -33,7 +33,6 @@ export default defineConfig({
         },
         
         
-        
         {
           label: 'DID-KR — Key Recovery',
           collapsed: true,
