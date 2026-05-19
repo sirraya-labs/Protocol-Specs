@@ -1,7 +1,7 @@
 ﻿
 ---
-DID Key Recovery Threat Model & Security Specification (DID-TM)
-description: A Formal Threat Taxonomy and Security Framework for DID Key Recovery — STRIDE-DID, K-Class, 57 named attacks, CVSS-DID scoring, and normative countermeasures
+title: "DID Key Recovery Threat Model & Security Specification (DID-TM)"
+description: "A Formal Threat Taxonomy and Security Framework for DID Key Recovery"
 ---
 
 **Editor:** Amir Hameed Mir · 
