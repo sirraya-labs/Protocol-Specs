@@ -32,6 +32,20 @@ export default defineConfig({
           ],
         },
         
+        {
+          label: 'Verifiable Supply Chain',
+          collapsed: true,
+          items: [
+            { 
+              label: 'VSC Requirements & Use Cases', 
+              slug: 'vsc/requirements-and-use-cases' 
+            },
+            { 
+              label: 'VSC Core Specification', 
+              slug: 'vsc/vsc-core' 
+            },
+          ],
+        },
         
         {
           label: 'DID-KR — Key Recovery',
@@ -43,7 +57,6 @@ export default defineConfig({
             { label: 'MPC Recovery', slug: 'did-kr/mpc' },
           ],
         },
-        
         
         {
           label: 'Governance',
