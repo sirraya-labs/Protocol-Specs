@@ -1,0 +1,122 @@
+---
+// src/components/SpecHeader.astro
+export interface Props {
+  title: string;
+  status: 'stable' | 'draft' | 'deprecated';
+  version: string;
+  maturity: 'proposal' | 'working-draft' | 'candidate' | 'standard';
+  lastUpdated: string;
+  editors: Array<{ name: string; url?: string }>;
+  dependencies?: Array<{ name: string; url: string }>;
+}
+const { title, status, version, maturity, lastUpdated, editors, dependencies } = Astro.props;
+---
+
+<div class="spec-header">
+  <div class="spec-header-top">
+    <h1>{title}</h1>
+    <span class="spec-status {status}">v{version} · {status}</span>
+  </div>
+  
+  <dl class="spec-metadata">
+    <div>
+      <dt>Maturity</dt>
+      <dd><span class="maturity-badge {maturity}">{maturity}</span></dd>
+    </div>
+    <div>
+      <dt>Last Updated</dt>
+      <dd><time datetime={lastUpdated}>{lastUpdated}</time></dd>
+    </div>
+    <div>
+      <dt>Editors</dt>
+      <dd>
+        {editors.map((editor, i) => (
+          <>{i > 0 && ', '}{editor.url ? <a href={editor.url}>{editor.name}</a> : editor.name}</>
+        ))}
+      </dd>
+    </div>
+    {dependencies && dependencies.length > 0 && (
+      <div>
+        <dt>Depends On</dt>
+        <dd>
+          {dependencies.map((dep, i) => (
+            <>{i > 0 && ', '}<a href={dep.url}>{dep.name}</a></>
+          ))}
+        </dd>
+      </div>
+    )}
+  </dl>
+</div>
+
+<style>
+  .spec-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--sl-color-gray-5);
+  }
+  
+  .spec-header-top {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .spec-header-top h1 {
+    margin: 0;
+  }
+  
+  .spec-metadata {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem 2rem;
+    margin-top: 1rem;
+    font-size: 0.88rem;
+  }
+  
+  .spec-metadata dt {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sl-color-gray-6);
+    margin-bottom: 0.15em;
+  }
+  
+  .spec-metadata dd {
+    margin: 0;
+  }
+  
+  .maturity-badge {
+    display: inline-block;
+    padding: 0.1em 0.5em;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  
+  .maturity-badge.standard {
+    background: #ecfdf5;
+    color: #059669;
+  }
+  
+  .maturity-badge.candidate {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  
+  .maturity-badge.working-draft {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  
+  .maturity-badge.proposal {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+  
+  [data-theme="dark"] .maturity-badge.standard { background: rgba(5, 150, 105, 0.18); }
+  [data-theme="dark"] .maturity-badge.candidate { background: rgba(37, 99, 235, 0.18); }
+  [data-theme="dark"] .maturity-badge.working-draft { background: rgba(217, 119, 6, 0.18); }
+  [data-theme="dark"] .maturity-badge.proposal { background: rgba(220, 38, 38, 0.18); }
+</style>
