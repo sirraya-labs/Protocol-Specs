@@ -1,4 +1,9 @@
-# Verifiable Supply Chain (VSC) — Core Specification
+
+
+---
+title: Verifiable Supply Chain (VSC) — Core Specification
+
+---
 
 ## Abstract
 
