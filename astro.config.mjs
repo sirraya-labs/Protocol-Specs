@@ -31,38 +31,9 @@ export default defineConfig({
             { label: 'Maturity Levels', slug: 'maturity' },
           ],
         },
-        {
-          label: 'Protocols',
-          collapsed: false,
-          items: [
-            { label: 'UDNA', slug: 'protocols/udna' },
-            { label: 'SCP — Codon Protocol', slug: 'protocols/scp' },
-            { label: 'DID-KR', slug: 'protocols/did-kr' },
-          ],
-        },
-        {
-          label: 'SCP — Protocol Specs',
-          collapsed: true,
-          items: [
-            { label: 'Codons Specification', slug: 'scp/codons' },
-            { label: 'A2A Communication', slug: 'scp/a2a' },
-            { label: 'Intent Resolution', slug: 'scp/intent-resolution' },
-            { label: 'Payload Envelope', slug: 'scp/payload-envelope' },
-            { label: 'Secure Transport', slug: 'scp/secure-transport' },
-            { label: 'Capability Negotiation', slug: 'scp/capability-negotiation' },
-            { label: 'Runtime Semantics', slug: 'scp/runtime-semantics' },
-          ],
-        },
-        {
-          label: 'UDNA — DID-Native Addressing',
-          collapsed: true,
-          items: [
-            { label: 'Address Resolution', slug: 'udna/resolution' },
-            { label: 'Handshake Protocol', slug: 'udna/handshake' },
-            { label: 'Key Lifecycle', slug: 'udna/key-lifecycle' },
-            { label: 'Relay Fallback', slug: 'udna/relay' },
-          ],
-        },
+        
+        
+        
         {
           label: 'DID-KR — Key Recovery',
           collapsed: true,
@@ -73,26 +44,8 @@ export default defineConfig({
             { label: 'MPC Recovery', slug: 'did-kr/mpc' },
           ],
         },
-        {
-          label: 'Implementations',
-          collapsed: false,
-          items: [
-            { label: 'Sirraya One', slug: 'implementations/sirraya-one' },
-            { label: 'PQC Suite', slug: 'implementations/pqc' },
-            { label: 'ZKP Auth', slug: 'implementations/zkp' },
-            { label: 'QKD Stack', slug: 'implementations/qkd' },
-          ],
-        },
-        {
-          label: 'Security Engineering',
-          collapsed: true,
-          items: [
-            { label: 'Threat Model', slug: 'security/threat-model' },
-            { label: 'Trust Model', slug: 'security/trust-model' },
-            { label: 'Key Compromise', slug: 'security/key-compromise' },
-            { label: 'Replay Attacks', slug: 'security/replay' },
-          ],
-        },
+        
+        
         {
           label: 'Governance',
           collapsed: true,
