@@ -72,7 +72,7 @@ The complete conformance test matrix is provided in Appendix D. Passing all test
 
 ## 2. The SEAL Data Structure
 
-![Figure 1 — The VSC SEAL Credential](placeholder-diagram-1.svg)
+![Figure 1 — The VSC SEAL Credential]()
 
 ### 2.1 Concept
 
@@ -270,7 +270,7 @@ The `how.disposition` field in each SEAL's event vector determines which state q
 
 ## 4. The Event Matrix Envelope
 
-![Figure 3 — The Event Matrix. Five canonical dimensions standardized via GS1, WCO, ISO, and W3C. +Dn extends without modifying the core. Forward-compatible. Vocabulary-neutral.](placeholder-diagram-3.svg)
+![Figure 3 — The Event Matrix. Five canonical dimensions standardized via GS1, WCO, ISO, and W3C. +Dn extends without modifying the core. Forward-compatible. Vocabulary-neutral.]
 
 ### 4.1 Concept
 
@@ -390,7 +390,7 @@ All registered +Dn vocabularies have equal standing in the VSC ecosystem. The VS
 
 ## 6. Chain of Custody Linking
 
-![Figure 4 — Chain of Custody: Linear chains for standard custody. Fork for consignment splits. Merge for lot combinations. Correction for immutable error handling.](placeholder-diagram-4.svg)
+![Figure 4 — Chain of Custody: Linear chains for standard custody. Fork for consignment splits. Merge for lot combinations. Correction for immutable error handling.]
 
 ### 6.1 Concept
 
@@ -449,7 +449,7 @@ VSC **MUST NOT** require Distributed Ledger Technology. The `did:web` method ope
 
 ## 8. Correction Protocol
 
-![Figure 5 — Correction Protocol: Immutable error handling with cryptographically linked correction SEALs. Original SEALs are never modified — errors are corrected with new attestations that preserve the complete audit trail.](placeholder-diagram-5.svg)
+![Figure 5 — Correction Protocol: Immutable error handling with cryptographically linked correction SEALs. Original SEALs are never modified — errors are corrected with new attestations that preserve the complete audit trail.]
 
 ### 8.1 Concept
 
@@ -493,7 +493,7 @@ In some scenarios, a SEAL issued by one actor may need to be corrected by a diff
 
 ## 9. Credential Presentation Protocol
 
-![Figure 6 — Credential Presentation Protocol: Verifier sends Presentation Request with authorization level. Holder responds with selectively disclosed Verifiable Presentations.](placeholder-diagram-6.svg)
+![Figure 6 — Credential Presentation Protocol: Verifier sends Presentation Request with authorization level. Holder responds with selectively disclosed Verifiable Presentations.]
 
 ### 9.1 Concept
 
@@ -549,7 +549,7 @@ The Credential Presentation Protocol is transport-agnostic. Implementations **MU
 
 ## 10. Profile: Pharmaceutical Finished Goods
 
-![Figure 7 — Pharmaceutical Finished Goods Profile: Constrains VSC Core for DSCSA and FMD compliance.](placeholder-diagram-7.svg)
+![Figure 7 — Pharmaceutical Finished Goods Profile: Constrains VSC Core for DSCSA and FMD compliance.]
 
 ### 10.1 Scope
 
