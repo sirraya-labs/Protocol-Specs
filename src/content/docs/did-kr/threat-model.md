@@ -408,8 +408,7 @@ Creation & Registration → Issuance & Delegation → Presentation & Authenticat
      (S,T,K1)                  (T,R,I)                  (S,I,E)                    (K4,T)              (K2,K3,E)        (K4,K6,D)
 ```
 
----
-```mdx
+
 ## PART III — Attack Catalog
 
 The attack catalog assigns each attack a permanent identifier of the form `DID-TM-ATK-NNN`. Identifiers are stable across versions of this specification; attacks are never renumbered. Deprecated attacks are marked as such but retain their identifier.
