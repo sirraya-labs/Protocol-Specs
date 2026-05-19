@@ -8,7 +8,7 @@ export default defineConfig({
     starlight({
       title: 'Sirraya Labs',
       logo: {
-        src: './src/public/sirraya-logo.svg',
+        src: './src/assets/sirraya-logo.svg',
       },
       favicon: '/favicon.svg',
       
