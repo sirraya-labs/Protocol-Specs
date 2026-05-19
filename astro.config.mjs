@@ -37,10 +37,6 @@ export default defineConfig({
           collapsed: true,
           items: [
             { 
-              label: 'VSC Requirements & Use Cases', 
-              slug: 'vsc/requirements-and-use-cases' 
-            },
-            { 
               label: 'VSC Core Specification', 
               slug: 'vsc/vsc-core' 
             },
