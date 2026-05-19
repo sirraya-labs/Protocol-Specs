@@ -2,6 +2,7 @@
 
 ---
 title: Verifiable Supply Chain (VSC) — Core Specification
+description: Verifiable Supply Chain
 
 ---
 
