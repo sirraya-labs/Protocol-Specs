@@ -188,7 +188,7 @@ This immutability rule is the foundation of VSC auditability. Because SEALs cann
 
 ## 3. The VSC State Machine
 
-![Figure 2 — The VSC State Machine covers the complete lifecycle of any product in any supply chain.](placeholder-diagram-2.svg)
+![Figure 2 — The VSC State Machine covers the complete lifecycle of any product in any supply chain.]()
 
 ### 3.1 Concept
 
