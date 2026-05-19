@@ -32,6 +32,17 @@ export default defineConfig({
           ],
         },
         
+        
+        {
+          label: 'DID-KR — Key Recovery',
+          collapsed: true,
+          items: [
+            { label: 'DID Recovery Spec', slug: 'did-kr/did-recovery' },
+            { label: 'DID Threat Model', slug: 'did-kr/threat-model' },
+            
+          ],
+        },
+        
         {
           label: 'Verifiable Supply Chain',
           collapsed: true,
@@ -40,17 +51,6 @@ export default defineConfig({
               label: 'VSC Core Specification', 
               slug: 'vsc/vsc-core' 
             },
-          ],
-        },
-        
-        {
-          label: 'DID-KR — Key Recovery',
-          collapsed: true,
-          items: [
-            { label: 'DID Recovery Spec', slug: 'did-kr/did-recovery' },
-            { label: 'DID Threat Model', slug: 'did-kr/threat-model' },
-            { label: 'Social Recovery', slug: 'did-kr/social' },
-            { label: 'MPC Recovery', slug: 'did-kr/mpc' },
           ],
         },
         
