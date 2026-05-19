@@ -1,1276 +1,837 @@
-
----
-title: DID Key Recovery Specification (DID-KR)
-description: Decentralized Identifier Key Recovery Extension — Social ZKP Recovery, Deterministic Seedling Inheritance, and MPC-Mediated Recovery
----
-
-
-**Subtitle:** Decentralized Identifier Key Recovery Extension  
-**Editor:** Amir Hameed Mir, Sirraya Labs ([amir@sirraya.org](mailto:amir@sirraya.org))  
-**Status:** Editor's Draft  
-**Repository:** [github.com/sirraya-labs/did-kr](https://github.com/sirraya-labs/did-kr)  
-
----
+# Verifiable Supply Chain (VSC) — Core Specification
 
 ## Abstract
 
-This specification defines a standardized, interoperable mechanism for recovering control of Decentralized Identifiers (DIDs) when private keys are lost or compromised. It introduces three complementary recovery types—Social ZKP Recovery, Deterministic Seedling Inheritance, and MPC-based Mediated Recovery—each addressing different trust models and user personas. The specification includes cryptographic hardening through Verifiable Secret Sharing, Verifiable Delay Functions, Proactive Secret Refreshment, and comprehensive security considerations with a formal JSON-LD context for machine interoperability.
+This document defines the **VSC Core Specification** — the normative architecture for representing supply chain events as cryptographically verifiable credentials. It defines the SEAL data structure, the VSC State Machine, the Event Matrix envelope, and the +Dn Extension Mechanism for open vocabulary extensibility.
 
----
+The specification establishes the complete VSC verification infrastructure: immutable event attestation through the SEAL structure, chain-of-custody linking with support for fork and merge topology, cryptographic proof binding via Decentralized Identifiers, selective disclosure through a normative field registry, a correction protocol that preserves audit integrity, and a credential presentation protocol for request-response exchange between verifiers and holders.
+
+Two inaugural profiles are defined: **Pharmaceutical Finished Goods**, constraining VSC for DSCSA and FMD compliance, and **Food Safety**, constraining VSC for FSMA 204 and Codex Alimentarius traceability. These profiles demonstrate how the core architecture extends to specific regulatory domains through vocabulary binding without architectural modification.
+
+This specification is the concrete realization of the requirements established in VSC-REQUIREMENTS. Where the requirements document defines *what* the system must do, this specification defines *how* it does it. All normative statements in this specification derive from requirements in VSC-REQUIREMENTS.
 
 ## Status of This Document
 
-This is an Editor's Draft prepared by Amir Hameed Mir of Sirraya Labs. It is intended for community review and implementation experimentation. Comments and contributions are welcome via the GitHub repository.
+This document is a **Community Group Draft** produced by the Verifiable Supply Chain Community Group. It has not been endorsed by the W3C membership and is not a W3C Standard. It may be updated, replaced, or made obsolete at any time.
+
+Feedback is welcome. The preferred mechanism is to open a GitHub issue. For general discussion, see the public mailing list.
 
 ---
 
 ## 1. Introduction
 
-The Decentralized Identifier (DID) architecture provides the foundation for self-sovereign identity but deliberately omits key recovery mechanisms, leaving implementers to develop ad-hoc, non-interoperable solutions. This gap represents a critical barrier to mass adoption, as users face permanent loss of identity or vendor lock-in when keys are lost.
+### 1.1 Purpose
 
-The DID Key Recovery Extension (DID-KR) addresses this gap by defining standardized recovery methods that can be published in DID Documents, discovered by resolvers, and executed through interoperable protocols. The specification embraces a "three-way solution" recognizing that no single recovery model suits all use cases:
+The Verifiable Supply Chain (VSC) Core Specification defines the universal architecture for representing any supply chain event as a cryptographically verifiable credential. It provides the normative data structures, state machine, extension mechanisms, and protocol bindings that enable interoperable, tamper-evident supply chain event exchange across organizational and jurisdictional boundaries.
 
-- **Type A (Social ZKP Recovery):** For users prioritizing autonomy, using threshold cryptography with zero-knowledge proofs to prevent guardian collusion.
-- **Type B (Deterministic Seedling):** For inheritance and migration, using hierarchical deterministic keys with Verifiable Delay Functions for decentralized time-locks.
-- **Type C (MPC-Mediated):** For enterprise and convenience users, using multi-party computation with threshold signatures and proactive share refreshment.
+This specification is designed to be **vocabulary-neutral**. The core architecture — the SEAL structure, the VSC State Machine, the Event Matrix, and the +Dn mechanism — does not depend on any specific industry vocabulary, commodity classification system, commercial terms framework, or regulatory code. Domain-specific requirements are expressed through vocabulary extensions that bind to the core architecture without modifying it. This separation ensures that VSC can represent pharmaceutical shipments, food supply chains, electronics logistics, critical mineral movements, and any other supply chain domain within a single, unified verification framework.
 
-### 1.1 Design Goals
+### 1.2 Relationship to Requirements
 
-- **Non-Custodial:** No single entity ever possesses the full private key.
-- **Interoperable:** Recovery methods are discoverable and executable across different wallet implementations.
-- **Privacy-Preserving:** Recovery metadata minimizes leakage of social graphs and security posture.
-- **Future-Proof:** Cryptographic agility allows migration to quantum-resistant algorithms.
+All normative statements in this specification derive from requirements established in VSC-REQUIREMENTS. The complete mapping of specification sections to requirement identifiers is provided in Appendix A. Where this specification and the requirements document appear to conflict, the requirements document prevails.
 
-### 1.2 Relationship to DID Core
+### 1.3 Document Structure
 
-This specification extends DID Core by defining:
+This specification is organized as follows:
 
-1. A new `recovery` verification relationship.
-2. Three new verification method types for recovery.
-3. Service endpoint definitions for recovery protocols.
-4. A JSON-LD context for machine-readable discovery.
+- **2 The SEAL Data Structure** — defines the atomic unit of VSC truth, including all normative fields, the event vector, chain of custody block, extension mechanism, and proof binding.
+- **3 The VSC State Machine** — defines the four-quadrant custody lifecycle model, state transitions, invariants, and the mapping between state quadrants and EPCIS dispositions.
+- **4 The Event Matrix Envelope** — defines the five-dimensional vector representation of supply chain events, with complete field specifications for each dimension.
+- **5 The +Dn Extension Mechanism** — defines the open vocabulary extensibility system, including vocabulary registration requirements and forward compatibility rules.
+- **6 Chain of Custody Linking** — defines the chain topology model supporting linear, fork, and merge structures, with rules for sequence numbering and parent-child relationships.
+- **7 Securing Mechanisms** — defines cryptographic proof binding, DID-based identity, selective disclosure, and DLT agnosticism requirements.
+- **8 Correction Protocol** — defines the immutable error correction mechanism, correction SEAL structure, and verifier behavior for correction chains.
+- **9 Credential Presentation Protocol** — defines the request-response protocol for credential exchange, including transport bindings and authorization levels.
+- **10 Profile: Pharmaceutical Finished Goods** — defines the pharma-specific vocabulary bindings, mandatory fields, and verification rules.
+- **11 Profile: Food Safety** — defines the food-specific vocabulary bindings, CTE and KDE mappings, and recall readiness requirements.
 
----
+### 1.4 Conformance
 
-## 2. Conformance
+The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **SHOULD**, **SHOULD NOT**, **RECOMMENDED**, **NOT RECOMMENDED**, **MAY**, and **OPTIONAL** in this document are to be interpreted as described in RFC2119 and RFC8174 when, and only when, they appear in all capitals, as shown here.
 
-As well as sections marked as non-normative, all authoring guidelines, diagrams, examples, and notes in this specification are non-normative. Everything else in this specification is normative.
+This specification defines three conformance classes:
 
-The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [[RFC2119](https://www.rfc-editor.org/rfc/rfc2119)] [[RFC8174](https://www.rfc-editor.org/rfc/rfc8174)] when, and only when, they appear in all capitals, as shown here.
+**VSC Core Conformant Issuer**
+An implementation that creates SEALs satisfying all **MUST** requirements in Sections 2–8. A Core Conformant Issuer produces SEALs that are structurally valid, correctly signed, and properly linked into custody chains.
 
----
+**VSC Core Conformant Verifier**
+An implementation that verifies SEALs satisfying all **MUST** requirements in Sections 6–7 and 9. A Core Conformant Verifier correctly resolves DIDs, verifies cryptographic proofs, checks credential status, validates chain topology, and processes correction SEALs according to the rules in Section 8.
 
-## 3. Terminology
+**VSC Profile Conformant Implementation**
+An implementation satisfying Core Conformance plus all **MUST** requirements of a named profile (Sections 10 or 11). Profile conformance is always in addition to core conformance — no implementation can claim profile conformance without also satisfying core conformance.
 
-<dl>
-<dt><strong>DID Controller</strong></dt>
-<dd>The entity authorized to make changes to a DID Document.</dd>
-
-<dt><strong>Recovery Method</strong></dt>
-<dd>A verification method specifically designated for recovering control of a DID.</dd>
-
-<dt><strong>Guardian</strong></dt>
-<dd>An entity holding a share of a recovery secret in Type A schemes.</dd>
-
-<dt><strong>Beneficiary</strong></dt>
-<dd>An entity authorized to inherit a DID in Type B schemes.</dd>
-
-<dt><strong>Provider</strong></dt>
-<dd>An MPC node participating in threshold signature generation for Type C schemes.</dd>
-
-<dt><strong>Threshold (t)</strong></dt>
-<dd>The minimum number of shares/participants required to complete recovery.</dd>
-
-<dt><strong>Share Refreshment</strong></dt>
-<dd>The process of generating new secret shares without changing the public key.</dd>
-
-<dt><strong>Verifiable Delay Function (VDF)</strong></dt>
-<dd>A function requiring a specific amount of sequential computation to evaluate.</dd>
-
-<dt><strong>Epoch</strong></dt>
-<dd>A version identifier for MPC provider share sets, incremented with each refreshment.</dd>
-
-<dt><strong>Catch-up Protocol</strong></dt>
-<dd>A mechanism for synchronizing lagging MPC providers to the current epoch.</dd>
-</dl>
+The complete conformance test matrix is provided in Appendix D. Passing all tests in a category establishes conformance for that class.
 
 ---
 
-## 4. The Recovery Method Architecture
+## 2. The SEAL Data Structure
 
-The DID-KR architecture introduces a new verification relationship `recovery` in the DID Document. This relationship contains one or more recovery methods that define how a DID can be recovered.
+![Figure 1 — The VSC SEAL Credential](placeholder-diagram-1.svg)
 
-### 4.1 Discovery Model
+### 2.1 Concept
 
-Recovery methods are discovered through standard DID resolution. A resolver or wallet implementing DID-KR:
+**SEAL** stands for **S**ecure **E**vent **A**ttestation **L**edger-entry. It is the atomic, immutable unit of truth in the VSC architecture. A SEAL is what gets signed, what gets stored, what gets verified, and what links together to form a custody chain. Every supply chain event — a manufacturing batch release, a shipment departure, a temperature reading, a customs clearance, a patient dispensing — is represented as a SEAL.
 
-1. Resolves the DID Document.
-2. Checks for the `@context` including the DID-KR context.
-3. Extracts the `recovery` verification relationship.
-4. Parses the recovery methods according to their `type`.
+A SEAL is a specialization of the W3C Verifiable Credential (VC-DATA-MODEL). It carries all the standard properties of a Verifiable Credential — an issuer, an issuance date, a credential subject, and a cryptographic proof — and adds VSC-specific properties that make it suitable for supply chain event representation: a versioned seal structure, a five-dimensional event vector, a chain of custody block, an extension mechanism for domain vocabularies, and a correction reference for error handling.
 
-### 4.2 Lifecycle
+The SEAL is **immutable**. Once created and signed, a SEAL **MUST NOT** be modified. This is not a design limitation — it is the fundamental property that makes VSC chains auditable. If an error is discovered in a SEAL, the correction protocol defined in Section 8 **MUST** be used to issue a new SEAL that references and supersedes the erroneous one. The original SEAL remains permanently in the chain as evidence of what was originally asserted.
 
-1. **Setup:** The DID Controller generates recovery parameters and publishes them in the DID Document.
-2. **Execution:** When recovery is needed, the recovering party initiates the protocol defined by the recovery method.
-3. **Completion:** Upon successful recovery, the DID Document is updated with new verification methods, and the recovery methods may be rotated.
-4. **Revocation:** Recovery methods can be revoked by the current controller using an active verification method.
+### 2.2 Complete SEAL Structure
 
----
-
-## 5. Recovery Method Types
-
-### 5.1 Type A: Social ZKP Recovery
-
-**Type URI:** `RecoveryMethodZKPSocial`
-
-The Social ZKP Recovery mechanism enables recovery through a threshold of trusted guardians without revealing secret shares to any party, including the guardians themselves.
-
-#### 5.1.1 Cryptographic Requirements
-
-Implementations MUST use:
-
-- **Verifiable Secret Sharing (VSS):** Feldman's VSS with Pedersen commitments [[FELDMAN](https://doi.org/10.1007/3-540-47721-7_17)].
-- **Zero-Knowledge Proofs:** Schnorr proofs of share consistency.
-- **Curve:** Ed25519 or secp256k1 (with explicit specification).
-
-#### 5.1.2 Setup Phase
-
-The DID Controller:
-
-1. Generates a random secret `s` (the recovery key).
-2. Constructs a random polynomial `P(x)` of degree `t-1` where `P(0) = s`.
-3. Computes shares `si = P(i)` for each of `n` guardians.
-4. Computes Pedersen commitments `Cj = g^{aj} * h^{bj}` for each coefficient `aj`.
-5. Distributes to each guardian:
-   - Their share `si` (encrypted to guardian's public key).
-   - The commitments `Cj`.
-   - A nonce for future ZKP challenges.
-6. Publishes in DID Document:
-   - The commitments `Cj`.
-   - Guardian identifiers and endpoints.
-   - Threshold `t`.
-
-#### 5.1.3 Recovery Phase
-
-To recover:
-
-1. Recovering party contacts `t` guardians.
-2. Each guardian generates a ZKP proving:
-   - Knowledge of share `si` consistent with commitments `Cj`.
-   - Without revealing `si`.
-3. Guardians send ZKPs to recovering party or aggregation service.
-4. ZKPs are verified and shares are reconstructed using Lagrange interpolation.
-5. The reconstructed secret `s` is used to generate new DID keys.
-
-#### 5.1.4 DID Document Representation
-
-```json
-{
-  "id": "did:example:123#recovery-social",
-  "type": "RecoveryMethodZKPSocial",
-  "controller": "did:example:123",
-  "recoveryThreshold": 3,
-  "recoveryGuardians": [
-    {
-      "id": "did:guardian:abc#key-1",
-      "guardianEndpoint": "https://guardian1.example.com/recover",
-      "guardianType": "person",
-      "commitmentIndex": 0
-    },
-    {
-      "id": "did:guardian:def#key-1",
-      "guardianEndpoint": "https://guardian2.example.com/recover",
-      "guardianType": "institution",
-      "commitmentIndex": 1
-    },
-    {
-      "id": "did:guardian:ghi#key-1",
-      "guardianEndpoint": "https://guardian3.example.com/recover",
-      "guardianType": "hardware",
-      "commitmentIndex": 2
-    }
-  ],
-  "vssCommitments": [
-    "0x04a5...c3f2",
-    "0x07b2...d1e4",
-    "0x02c8...a9b6"
-  ],
-  "curve": "ed25519",
-  "vssScheme": "feldman-2024"
-}
-```
-
----
-
-### 5.2 Type B: Deterministic Seedling Inheritance
-
-**Type URI:** `RecoveryMethodDeterministic`
-
-The Deterministic Seedling mechanism enables recovery through a master seed phrase, with optional time-locked inheritance for beneficiaries.
-
-#### 5.2.1 Cryptographic Requirements
-
-Implementations MUST use:
-
-- **Hierarchical Deterministic Keys:** BIP-32 or BIP-39 style derivation [[BIP32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)].
-- **Encryption:** XChaCha20-Poly1305 for seed lockbox.
-- **Time-Locks:** Verifiable Delay Functions (VDFs) for decentralized inheritance [[VDF](https://eprint.iacr.org/2018/601)].
-- **VDF Algorithm:** Wesolowski's VDF or Pietrzak's VDF.
-
-#### 5.2.2 Setup Phase
-
-The DID Controller:
-
-1. Generates a master seed `S` (128-256 bits of entropy).
-2. Derives the DID private key using a standardized derivation path.
-3. If inheritance desired:
-   - Generates a VDF modulus `N` and challenge `x`.
-   - Computes VDF output `y = x^(2^t) mod N`.
-   - Uses `y` to derive encryption key for seed lockbox.
-4. Encrypts seed `S` to beneficiary's public key.
-5. Publishes in DID Document:
-   - Derivation path.
-   - Encrypted seed lockbox.
-   - VDF parameters (if inheritance enabled).
-
-#### 5.2.3 Recovery Phase
-
-For self-recovery:
-
-1. User enters seed phrase.
-2. Wallet re-derives keys using specified derivation path.
-3. DID Document is updated with new keys.
-
-For inheritance:
-
-1. Beneficiary waits for inactivity period.
-2. Computes VDF for specified time parameter.
-3. Derives decryption key from VDF output.
-4. Decrypts seed lockbox.
-5. Recovers DID using seed.
-
-#### 5.2.4 DID Document Representation
-
-```json
-{
-  "id": "did:example:123#recovery-seedling",
-  "type": "RecoveryMethodDeterministic",
-  "controller": "did:example:123",
-  "seedDerivationPath": "m/44'/0'/0'/0/0",
-  "derivationStandard": "bip32-ed25519",
-  "encryptedSeedLockbox": {
-    "ciphertext": "0x7b3a...f9c2",
-    "algorithm": "XChaCha20-Poly1305",
-    "iv": "0x1a2b...3c4d",
-    "beneficiaryPublicKey": "did:beneficiary:abc#key-1",
-    "beneficiaryKeyType": "x25519"
-  },
-  "deadMansSwitch": {
-    "type": "VDFTimeLock",
-    "vdfParameters": {
-      "difficulty": 1000000,
-      "iterations": 10000,
-      "estimatedWallTime": "P30D",
-      "referencePlatform": "intel-i9-13900k-2024",
-      "tolerance": 0.2,
-      "modulus": "0x8f3b...a1c4",
-      "challenge": "0x2d4e...f8a1",
-      "vdfAlgorithm": "wesolowski-2024",
-      "verificationMode": "wesolowski-optimistic"
-    },
-    "inactivityPeriod": "P1Y",
-    "lastActivityProof": "https://notary.example.com/proof/123"
-  }
-}
-```
-
----
-
-### 5.3 Type C: MPC-Mediated Recovery
-
-**Type URI:** `RecoveryMethodMPC`
-
-The MPC-Mediated Recovery mechanism distributes key shares across multiple independent providers who perform threshold signatures without reconstructing the full key.
-
-#### 5.3.1 Cryptographic Requirements
-
-Implementations MUST use:
-
-- **Threshold Signatures:** fROST (Flexible Round-Optimized Schnorr Threshold) signatures [[FROST](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/)].
-- **Proactive Secret Sharing:** Share refreshment protocol.
-- **Authentication:** Verifiable Credentials or WebAuthn for user authentication to providers.
-- **Transport:** mTLS or Noise Protocol for secure provider communication.
-
-#### 5.3.2 Setup Phase
-
-The DID Controller:
-
-1. Generates a threshold key pair with `t-of-n` providers.
-2. Distributes shares to providers via secure channels.
-3. Establishes authentication credentials with each provider.
-4. Publishes in DID Document:
-   - Provider endpoints.
-   - Threshold parameters.
-   - Share rotation schedule.
-
-#### 5.3.3 Recovery Phase
-
-To recover:
-
-1. User authenticates to `t` providers using established credentials.
-2. Providers verify user authentication and check for any revocation.
-3. Providers engage in fROST signing protocol to generate a signature authorizing DID update.
-4. The signature is used to create a new DID Document with fresh keys.
-5. Providers optionally refresh their shares after successful recovery.
-
-#### 5.3.4 Share Refreshment
-
-Providers MUST support periodic share refreshment:
-
-1. At scheduled intervals, providers engage in refresh protocol.
-2. New shares of the same secret are generated.
-3. Old shares are securely deleted.
-4. The public key remains unchanged.
-
-#### 5.3.5 DID Document Representation
-
-```json
-{
-  "id": "did:example:123#recovery-mpc",
-  "type": "RecoveryMethodMPC",
-  "controller": "did:example:123",
-  "mpcThreshold": 2,
-  "mpcTotalProviders": 3,
-  "mpcProtocol": "fROST-ed25519-2024",
-  "mpcProviders": [
-    {
-      "id": "did:provider:one#mpc-node",
-      "endpoint": "https://provider1.example.com/mpc",
-      "authType": "vc-presentation",
-      "authRequirements": {
-        "credentialType": "MpcProviderCredential",
-        "trustFramework": "did-kr-provider-v1"
-      },
-      "providerKey": "did:provider:one#key-1"
-    },
-    {
-      "id": "did:provider:two#mpc-node",
-      "endpoint": "https://provider2.example.com/mpc",
-      "authType": "passkey",
-      "authRequirements": {
-        "rpId": "provider2.example.com",
-        "algorithm": "es256"
-      },
-      "providerKey": "did:provider:two#key-1"
-    },
-    {
-      "id": "did:provider:three#mpc-node",
-      "endpoint": "https://provider3.example.com/mpc",
-      "authType": "oauth2",
-      "authRequirements": {
-        "issuer": "https://auth.provider3.example.com",
-        "scope": "did-recovery"
-      },
-      "providerKey": "did:provider:three#key-1"
-    }
-  ],
-  "shareRotation": {
-    "rotationInterval": "P30D",
-    "currentEpoch": 42,
-    "providerStateEndpoint": "https://provider1.example.com/state",
-    "lastRotationProof": "0x8a3c...f2b5"
-  }
-}
-```
-
----
-
-### 5.4 Provider State Synchronization (Normative)
-
-When providers operate at different epochs, the recovery protocol MUST handle version skew to prevent state drift from becoming a single point of failure.
-
-#### 5.4.1 Epoch Discovery
-
-During recovery initiation, each provider MUST include their `currentEpoch` in the authentication response:
-
-```json
-{
-  "status": "authenticated",
-  "provider": "did:provider:one#mpc-node",
-  "currentEpoch": 42,
-  "lastRotation": "2024-05-15T10:30:00Z",
-  "signature": "0x9a8b..."
-}
-```
-
-#### 5.4.2 Lag Detection
-
-The recovering party (or coordinating provider) MUST compare epochs from all responding providers:
-
-1. Determine the majority epoch (the epoch value held by the highest number of providers).
-2. If any provider is more than `maxEpochSkew` behind the majority, that provider MUST be excluded from the signing ceremony.
-3. The value of `maxEpochSkew` is defined in the DID Document and MUST NOT exceed 1 (RECOMMENDED) unless otherwise specified.
-
-#### 5.4.3 Automatic Catch-up Protocol
-
-Providers lagging behind MUST have a mechanism to synchronize:
-
-1. **Catch-up Request:** The lagging provider sends a signed request to a quorum of up-to-date providers:
-
-```json
-{
-  "protocol": "catchup-request-v1",
-  "provider": "did:provider:lagging#mpc-node",
-  "currentEpoch": 41,
-  "targetEpoch": 42,
-  "signature": "0x7c3d..."
-}
-```
-
-2. **Verifiable Refresh Transcript:** Up-to-date providers respond with:
-   - The group's public key (unchanged across epochs).
-   - A verifiable transcript of the refreshment protocol for epochs `current+1` through `target`.
-   - Each transcript MUST include cryptographic proofs that the refreshment was performed correctly.
-
-3. **Verification and Update:** The lagging provider:
-   - Verifies each transcript using the group's public key and published verification parameters.
-   - Updates their local share to match the target epoch.
-   - Securely deletes the old share.
-
-4. **Confirmation:** Once updated, the provider confirms readiness to the recovering party.
-
-#### 5.4.4 DID Document Addition
-
-The `shareRotation` object MUST include synchronization parameters:
-
-```json
-"shareRotation": {
-  "rotationInterval": "P30D",
-  "currentEpoch": 42,
-  "providerStateEndpoint": "https://provider1.example.com/state",
-  "lastRotationProof": "0x8a3c...f2b5",
-  "synchronization": {
-    "maxEpochSkew": 1,
-    "catchupProtocol": "vss-refresh-verifiable-2024",
-    "timeout": "PT30S",
-    "requiredQuorum": 2
-  }
-}
-```
-
----
-
-## 6. Verification Relationships
-
-This specification defines a new verification relationship for DID Documents.
-
-### 6.1 The `recovery` Relationship
-
-The `recovery` verification relationship indicates that the associated verification methods are specifically authorized for recovering control of the DID. These methods are not intended for general authentication or assertion but are limited to recovery operations.
+The following example shows the complete structure of a VSC SEAL. Every top-level property is normative and **MUST** be present in every SEAL unless explicitly marked as optional.
 
 ```json
 {
   "@context": [
-    "https://www.w3.org/ns/did/v1",
-    "https://sirraya.org/ns/did/recovery/v1"
+    "https://www.w3.org/ns/credentials/v2",
+    "https://w3c-cg.github.io/vsc-core/contexts/vsc-v1.jsonld"
   ],
-  "id": "did:example:123",
-  "recovery": [
-    "did:example:123#recovery-social",
-    "did:example:123#recovery-seedling",
-    "did:example:123#recovery-mpc"
-  ],
-  "verificationMethod": [
-    {
-      "id": "did:example:123#recovery-social",
-      "type": "RecoveryMethodZKPSocial",
-      "controller": "did:example:123"
-    }
-  ]
-}
-```
-
-### 6.2 Processing Rules
-
-When processing a recovery request:
-
-1. The resolver MUST verify that the recovery method is listed in the `recovery` relationship.
-2. The resolver MUST verify that the recovery method's `controller` is authorized to modify the DID Document.
-3. The resolver MUST perform dependency checking to prevent recovery loops.
-
----
-
-## 7. Cryptographic Primitives
-
-### 7.1 Verifiable Secret Sharing (Feldman's VSS)
-
-Let `G` be a group of prime order `q` with generator `g`.
-
-1. Dealer chooses secret `s ∈ Z_q` and random polynomial `P(x) = s + a₁x + ... + aₜ₋₁x^(t-1)`.
-2. Dealer computes commitments `C₀ = g^s, C₁ = g^a₁, ..., Cₜ₋₁ = g^(aₜ₋₁)`.
-3. For participant `i`, share `sᵢ = P(i)` is sent securely.
-4. Participant verifies: `g^(sᵢ) = ∏(Cⱼ^(i^j)) for j=0 to t-1`.
-
-### 7.2 Zero-Knowledge Proof of Share
-
-To prove knowledge of share `sᵢ` without revealing it:
-
-1. Prover chooses random `r ← Z_q`.
-2. Prover sends `R = g^r`.
-3. Verifier sends challenge `c ← Z_q`.
-4. Prover sends `z = r + c·sᵢ mod q`.
-5. Verifier checks `g^z = R · (∏(Cⱼ^(i^j)))^c`.
-
-### 7.3 Verifiable Delay Function (Wesolowski)
-
-Input: `x ∈ QR(N)`, time parameter `T`  
-Output: `y = x^(2^T) mod N`, proof `π`
-
-1. Compute `y = x^(2^T) mod N` via sequential squaring.
-2. Let `l = ⌊2^T / 2⌋`, compute `π = x^l mod N`.
-3. Verifier checks: `π^(2^(T/2)) * x^(2^T mod 2^(T/2)) = y mod N`.
-
-### 7.4 VDF Parameter Calibration (Normative)
-
-Implementations MUST specify VDF difficulty in a hardware-agnostic way to account for varying computational capabilities across different platforms.
-
-#### 7.4.1 Difficulty Units
-
-Difficulty is measured in **sequential squaring operations** estimated to require a specific **wall-clock time** on a **reference implementation**.
-
-#### 7.4.2 Reference Platform Definition
-
-Implementations MUST use the following reference platform for calibration:
-
-- **CPU:** Intel i9-13900K (or equivalent), single-threaded execution
-- **Memory:** 32GB DDR5 RAM
-- **Implementation:** Optimized C with GMP (GNU Multiple Precision) library
-- **Operating System:** Linux kernel 6.1 or newer
-
-#### 7.4.3 Calibration Formula
-
-The actual time required on a target platform is calculated as:
-
-```
-T_actual = T_reference × (Speed_reference / Speed_actual)
-```
-
-Where:
-- `T_reference` is the estimated time on the reference platform
-- `Speed_reference` is the reference platform's VDF computation speed (operations/second)
-- `Speed_actual` is the target platform's measured or benchmarked speed
-
-#### 7.4.4 Published Parameters
-
-VDF parameters published in DID Documents MUST include:
-
-```json
-"vdfParameters": {
-  "difficulty": 1000000,
-  "iterations": 10000,
-  "estimatedWallTime": "P30D",
-  "referencePlatform": "intel-i9-13900k-2024",
-  "tolerance": 0.2,
-  "verificationMode": "wesolowski-optimistic",
-  "benchmarkRequired": false
-}
-```
-
-### 7.5 fROST Threshold Signatures
-
-fROST enables `t-of-n` threshold Schnorr signatures [[FROST](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/)]:
-
-1. **Key Generation:** Distributed key generation produces group public key and individual secret shares.
-2. **Signing:** Each participant generates a nonce and commitment.
-3. **Aggregation:** Coordinator aggregates commitments and challenges.
-4. **Response:** Each participant responds with partial signatures.
-5. **Finalization:** Coordinator aggregates partial signatures into final signature.
-
----
-
-## 8. Security Considerations
-
-### 8.1 Guardian Collusion (Type A)
-
-**Threat:** A threshold of guardians colludes to reconstruct the user's private key.
-
-**Mitigation:** Verifiable Secret Sharing with Pedersen commitments ensures guardians cannot verify their shares are correct without the dealer's trapdoor. Additionally, guardians SHOULD be selected from diverse trust domains, and the threshold SHOULD be set high enough (e.g., 3-of-5) to make collusion difficult.
-
-### 8.2 Time-Lock Bypass (Type B)
-
-**Threat:** An attacker compromises the dead man's switch to release inheritance keys prematurely.
-
-**Mitigation:** Verifiable Delay Functions provide computational asymmetry—releasing the key requires a specific amount of sequential computation that cannot be parallelized. This prevents premature release even if the switch is compromised.
-
-### 8.3 Provider State Drift (Type C)
-
-**Threat:** MPC providers update shares independently, causing key desynchronization.
-
-**Mitigation:** Proactive Secret Sharing with verifiable refreshment protocols ensures all providers maintain consistent shares. The `shareRotation` object enables verification of current epoch, and the catch-up protocol ensures lagging providers can synchronize.
-
-### 8.4 Recovery-Loop Prevention
-
-**Threat:** Circular recovery dependencies make recovery impossible.
-
-**Mitigation:** Implementations MUST validate that the dependency graph of recovery methods is acyclic. This check MUST be performed when publishing a recovery method, when initiating recovery, and during periodic health checks.
-
-```
-function checkAcyclic(did, visited = new Set()):
-  if visited.has(did): return false
-  visited.add(did)
-  for each recoveryMethod in resolve(did).recovery:
-    for each guardian in recoveryMethod.guardians:
-      if guardian.did is DID:
-        if not checkAcyclic(guardian.did, visited):
-          return false
-  visited.delete(did)
-  return true
-```
-
-### 8.5 Key Wrapping Security
-
-**Threat:** Weak encryption of seed lockboxes.
-
-**Mitigation:** All encrypted payloads MUST use authenticated encryption (AEAD) with 256-bit keys. The encryption algorithm MUST be explicitly specified, and implementations MUST reject algorithms known to be weak.
-
-### 8.6 Quantum Computing Resistance
-
-While current algorithms are secure against classical computers, implementations SHOULD plan for quantum resistance:
-
-- **Type A:** Consider lattice-based VSS for post-quantum security.
-- **Type B:** Use hash-based signatures for seed commitment.
-- **Type C:** Transition to threshold lattice signatures when standardized.
-
----
-
-## 9. Privacy Considerations
-
-### 9.1 Metadata Leakage
-
-Recovery methods may leak:
-
-- Social graph (guardian identities).
-- Security posture (threshold values, provider choices).
-- Activity patterns (last activity proofs).
-
-**Mitigations:**
-
-1. **Encrypted DID Document Entries:** Recovery methods SHOULD be stored off-chain with only content-addressed references in the public DID Document.
-2. **Guardian Anonymity:** Guardian endpoints SHOULD support onion services or other anonymizing networks.
-3. **Minimum Disclosure:** Recovery methods SHOULD disclose only the minimum information needed for discovery.
-
-### 9.2 Guardian Privacy (Enhanced)
-
-To prevent exposure of social graphs through public DID Documents:
-
-#### 9.2.1 Hashed Guardian Identifiers (RECOMMENDED)
-
-Instead of publishing full guardian DIDs, implementations SHOULD publish salted hashes:
-
-```json
-"recoveryGuardians": [
-  {
-    "id": "urn:hash:sha256:3a7b...c9f2",
-    "salt": "0x4d8e...f2a3",
-    "guardianEndpoint": "http://guardian1.onion/recover",
-    "commitmentIndex": 0
-  }
-]
-```
-
-**Resolution Protocol:**
-
-1. The recovering party knows the actual guardian DIDs.
-2. They compute hashes using the published salt and match against published values.
-3. The onion endpoint ensures guardian identity isn't leaked via DNS resolution.
-
-#### 9.2.2 Fully Encrypted Recovery Section (OPTIONAL)
-
-For maximum privacy, the entire `recovery` verification relationship MAY be stored off-chain:
-
-```json
-{
-  "recovery": "ipfs://QmXyZ...abc123",
-  "recoveryProof": "0x8a3c...f2b5"
-}
-```
-
-### 9.3 Correlation Risk
-
-The same recovery method used across multiple DIDs could correlate them.
-
-**Mitigation:** DID controllers SHOULD use different recovery methods for different DIDs, or ensure recovery methods are unlinkable through cryptographic techniques such as different salt values for each DID, different guardian sets, or unique encryption keys for each lockbox.
-
-### 9.4 Beneficiary Privacy
-
-In inheritance scenarios, the beneficiary's public key is published.
-
-**Mitigation:** Beneficiaries SHOULD use single-use keys or derived addresses that cannot be linked to their primary identity. The `beneficiaryPublicKey` MAY be a derived key specific to this inheritance relationship.
-
----
-
-## 10. Interoperability Requirements
-
-### 10.1 Mandatory-to-Implement Algorithms
-
-To ensure baseline interoperability, implementations MUST support:
-
-| Algorithm | Usage |
-|-----------|-------|
-| Ed25519 | Signatures, VSS |
-| SHA-256 | Hashing |
-| XChaCha20-Poly1305 | Encryption |
-| BIP-32 | Key derivation |
-| fROST (Ed25519) | Threshold signatures |
-| Feldman VSS | Verifiable secret sharing |
-| Wesolowski VDF | Time-locks |
-
-### 10.2 Optional Algorithms
-
-Implementations MAY support:
-
-| Algorithm | Usage |
-|-----------|-------|
-| secp256k1 | Blockchain compatibility |
-| BLS12-381 | Pairing-based cryptography |
-| Pietrzak VDF | Time-locks |
-| Dilithium | Post-quantum signatures |
-| Kyber | Post-quantum encryption |
-
-### 10.3 DID Method Compatibility
-
-This specification is DID method agnostic but requires methods to support:
-
-1. **DID Document updates:** The method must allow updating verification methods.
-2. **Resolution:** The method must support resolving the DID Document to discover recovery methods.
-3. **Deactivation:** The method should support deactivating compromised recovery methods.
-
----
-
-## 11. JSON-LD Context
-
-The complete JSON-LD context for this specification is available at: `https://sirraya.org/ns/did/recovery/v1.jsonld`
-
-```json
-{
-  "@context": {
-    "@version": 1.1,
-    "@protected": true,
-    
-    "id": "@id",
-    "type": "@type",
-    
-    "RecoveryMethod": "https://sirraya.org/ns/did/recovery#RecoveryMethod",
-    "RecoveryMethodZKPSocial": "https://sirraya.org/ns/did/recovery#RecoveryMethodZKPSocial",
-    "RecoveryMethodDeterministic": "https://sirraya.org/ns/did/recovery#RecoveryMethodDeterministic",
-    "RecoveryMethodMPC": "https://sirraya.org/ns/did/recovery#RecoveryMethodMPC",
-    
-    "recovery": {
-      "@id": "https://sirraya.org/ns/did/recovery#recovery",
-      "@type": "@id",
-      "@container": "@set"
-    },
-    
-    "recoveryThreshold": {
-      "@id": "https://sirraya.org/ns/did/recovery#recoveryThreshold",
-      "@type": "xsd:integer"
-    },
-    
-    "recoveryGuardians": {
-      "@id": "https://sirraya.org/ns/did/recovery#recoveryGuardians",
-      "@type": "@id",
-      "@container": "@set"
-    },
-    
-    "guardianEndpoint": {
-      "@id": "https://sirraya.org/ns/did/recovery#guardianEndpoint",
-      "@type": "xsd:anyURI"
-    },
-    
-    "vssCommitments": {
-      "@id": "https://sirraya.org/ns/did/recovery#vssCommitments",
-      "@type": "xsd:string",
-      "@container": "@list"
-    },
-    
-    "seedDerivationPath": {
-      "@id": "https://sirraya.org/ns/did/recovery#seedDerivationPath",
-      "@type": "xsd:string"
-    },
-    
-    "encryptedSeedLockbox": {
-      "@id": "https://sirraya.org/ns/did/recovery#encryptedSeedLockbox",
-      "@type": "@id"
-    },
-    
-    "deadMansSwitch": {
-      "@id": "https://sirraya.org/ns/did/recovery#deadMansSwitch",
-      "@type": "@id"
-    },
-    
-    "vdfParameters": {
-      "@id": "https://sirraya.org/ns/did/recovery#vdfParameters",
-      "@type": "@id"
-    },
-    
-    "mpcThreshold": {
-      "@id": "https://sirraya.org/ns/did/recovery#mpcThreshold",
-      "@type": "xsd:integer"
-    },
-    
-    "mpcProviders": {
-      "@id": "https://sirraya.org/ns/did/recovery#mpcProviders",
-      "@type": "@id",
-      "@container": "@set"
-    },
-    
-    "shareRotation": {
-      "@id": "https://sirraya.org/ns/did/recovery#shareRotation",
-      "@type": "@id"
-    },
-    
-    "currentEpoch": {
-      "@id": "https://sirraya.org/ns/did/recovery#currentEpoch",
-      "@type": "xsd:integer"
-    },
-    
-    "synchronization": {
-      "@id": "https://sirraya.org/ns/did/recovery#synchronization",
-      "@type": "@id"
-    },
-    
-    "maxEpochSkew": {
-      "@id": "https://sirraya.org/ns/did/recovery#maxEpochSkew",
-      "@type": "xsd:integer"
-    },
-    
-    "catchupProtocol": {
-      "@id": "https://sirraya.org/ns/did/recovery#catchupProtocol",
-      "@type": "xsd:string"
-    }
-  }
-}
-```
-
----
-
-## 12. Recovery Protocol Flows
-
-### 12.1 Type A Recovery Protocol
-
-**Endpoint:** Guardian-provided `guardianEndpoint`
-
-**Request (from recovering party to guardian):**
-
-```
-POST /recover HTTP/1.1
-Host: guardian1.example.com
-Content-Type: application/json
-
-{
-  "protocol": "did-kr-recovery-v1",
-  "recoveryId": "did:example:123#recovery-social",
-  "did": "did:example:123",
-  "nonce": "a1b2c3d4e5f6...",
-  "challenge": "0x4d5e6f7a8b9c...",
-  "commitmentIndex": 0
-}
-```
-
-**Response (from guardian):**
-
-```json
-{
-  "status": "success",
-  "proof": {
-    "type": "schnorr-proof-2024",
-    "commitment": "0x8f3a2b1c...",
-    "challenge": "0x4d5e6f7a...",
-    "response": "0x2b7c8d9e..."
+  "type":          ["VerifiableCredential", "VSC-SEAL"],
+  "id":            "urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "issuer":        "did:web:manufacturer.example.com",
+  "issuanceDate":  "2026-05-16T08:30:05Z",
+
+  "sealVersion":   "1.0",
+  "sealTimestamp": "2026-05-16T08:30:05Z",
+
+  "eventVector": {
+    "what":  { },
+    "when":  { },
+    "where": { },
+    "who":   { },
+    "how":   { }
   },
-  "guardianId": "did:guardian:abc#key-1",
-  "signature": "0x9a8b7c6d..."
+
+  "extensions": {
+    "+Dn": {}
+  },
+
+  "chainOfCustody": {
+    "chainId":        "urn:uuid:chain-00000000-0000-0000-0000-000000000001",
+    "sequenceNumber": 1,
+    "parentSeals":    [],
+    "childSeals":     [],
+    "topology":       "linear"
+  },
+
+  "correctionOf": null,
+
+  "credentialSubject": {
+    "id": "urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479"
+  },
+
+  "proof": { }
 }
 ```
 
-### 12.2 Type B Recovery Protocol
+Each of these properties is specified in detail in the following subsections. Implementers **MUST** ensure that every SEAL they produce conforms to the field requirements defined below.
 
-**For self-recovery:**
+### 2.3 Normative Fields
 
-```
-POST /recover/seed HTTP/1.1
-Host: wallet.example.com
-Content-Type: application/json
+#### 2.3.1 `sealVersion`
 
-{
-  "protocol": "did-kr-recovery-v1",
-  "recoveryId": "did:example:123#recovery-seedling",
-  "seedPhrase": "abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual adapt add",
-  "derivationPath": "m/44'/0'/0'/0/0"
-}
-```
+**MUST** be present as a string. **MUST** be `"1.0"` for all SEALs conforming to this version of the specification. This field enables verifiers to determine which version of the SEAL schema to apply when validating the credential. Future versions of this specification will increment this value, and verifiers **MUST** reject SEALs with unsupported version identifiers.
 
-**For inheritance (VDF computation):**
+#### 2.3.2 `sealTimestamp`
 
-```
-POST /recover/inherit HTTP/1.1
-Host: beneficiary.example.com
-Content-Type: application/json
+**MUST** be present as an ISO 8601 date-time string with timezone offset. Records the moment at which the SEAL was generated by the issuer's system.
 
-{
-  "protocol": "did-kr-recovery-v1",
-  "recoveryId": "did:example:123#recovery-seedling",
-  "vdfProof": {
-    "output": "0x7c3d4e5f...",
-    "proof": "0x2a5b6c7d...",
-    "computationTime": "P32D",
-    "platform": "amd-ryzen-7950x-2025"
-  }
-}
-```
+The `sealTimestamp` is distinct from `eventVector.when.eventTime`. The seal timestamp records *when the attestation was created*; the event time records *when the supply chain event occurred*. These two timestamps **MAY** differ by seconds, minutes, or in some operational scenarios hours, due to batch processing, connectivity gaps, or human review workflows. Verifiers **MUST NOT** assume that these two timestamps are equal.
 
-### 12.3 Type C Recovery Protocol
+> **Note: Timestamp precision**
+> The `sealTimestamp` **SHOULD** be recorded at millisecond precision when the issuing system supports it. At minimum, second precision is **REQUIRED**.
 
-**Phase 1: Authentication**
+#### 2.3.3 `correctionOf`
 
-```
-POST /mpc/auth HTTP/1.1
-Host: provider1.example.com
-Content-Type: application/json
+**MUST** be present. For original SEALs (those that are not correcting a previous error), this field **MUST** be `null`. For correction SEALs issued under the protocol defined in Section 8, this field **MUST** contain the `id` of the erroneous SEAL being corrected.
 
-{
-  "protocol": "did-kr-recovery-v1",
-  "recoveryId": "did:example:123#recovery-mpc",
-  "authType": "vc-presentation",
-  "presentation": {
-    "@context": "https://www.w3.org/2018/credentials/v1",
-    "type": ["VerifiablePresentation"],
-    "verifiableCredential": []
-  }
-}
-```
+The presence of a non-null `correctionOf` value is the mechanism by which verifiers identify correction chains. When a verifier encounters a SEAL where `correctionOf` is not `null`, it **MUST** apply the verification rules specified in Section 8.3.
 
-**Authentication Response with Epoch:**
+#### 2.3.4 `id`
+
+Each SEAL **MUST** have a globally unique identifier. This identifier is used for chain linking (as the value referenced in `parentSeals` and `childSeals`), for correction referencing (as the value of `correctionOf`), and for general SEAL retrieval and reference.
+
+UUIDs encoded as URNs (e.g., `urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479`) are **RECOMMENDED** as the identifier scheme. Content-addressed identifiers based on cryptographic hashes of the SEAL content are **PERMITTED**. The identifier **MUST** be stable — it **MUST NOT** change after the SEAL is created, even if the SEAL is later superseded by a correction SEAL. The identifier **MUST** be unique across all SEALs in all chains.
+
+#### 2.3.5 `issuer`
+
+**MUST** be present as a Decentralized Identifier (DID) conforming to DID-CORE. The issuer is the Supply Chain Actor that asserts the event and creates the SEAL. The issuer's DID **MUST** be resolvable to a DID Document containing the public key material used to verify the SEAL's cryptographic proof.
+
+#### 2.3.6 `eventVector`
+
+**MUST** be present. Contains the five dimensions of the Event Matrix: `what`, `when`, `where`, `who`, and `how`. Each dimension is specified in detail in Section 4. The `eventVector` is the core payload of the SEAL — it captures everything that is known about the supply chain event being attested.
+
+#### 2.3.7 `extensions`
+
+**MUST** be present. Contains the `+Dn` extension block for domain-specific vocabularies. The `+Dn` mechanism is specified in Section 5. Even if no extensions are used, the `extensions` object **MUST** be present with an empty `+Dn` block.
+
+#### 2.3.8 `chainOfCustody`
+
+**MUST** be present. Contains the chain linking information that connects this SEAL to its predecessors and successors. The chain of custody structure is specified in Section 6.
+
+#### 2.3.9 `proof`
+
+**MUST** be present. Contains the cryptographic proof that binds the SEAL to the issuer's DID. The proof format and requirements are specified in Section 7.
+
+#### 2.3.10 Immutability Rule
+
+Once created and signed, a SEAL **MUST NOT** be modified. Any change to any field — including the event vector, extensions, chain of custody, or metadata — creates a new SEAL. If the change is a correction of an error, the new SEAL **MUST** be issued as a correction SEAL under the protocol in Section 8. If the change represents a new event in the supply chain (e.g., a product moving from one location to another), the new SEAL **MUST** be linked into the custody chain with `parentSeals` referencing the previous SEAL.
+
+This immutability rule is the foundation of VSC auditability. Because SEALs cannot be modified, a verifier can examine any SEAL in a chain and know with cryptographic certainty that the event data it contains is exactly what the issuer asserted at the time of issuance. The correction protocol preserves this property by creating new SEALs rather than modifying existing ones — the original assertion remains visible and verifiable even after it has been superseded.
+
+---
+
+## 3. The VSC State Machine
+
+![Figure 2 — The VSC State Machine covers the complete lifecycle of any product in any supply chain.](placeholder-diagram-2.svg)
+
+### 3.1 Concept
+
+The **VSC State Machine** is a four-quadrant model that expresses the complete lifecycle of any product in any supply chain. Every product tracked by VSC exists in exactly one of four custody states at any given moment. The state machine defines what those states are, how products transition between them, and what conditions must be satisfied for each transition to be valid.
+
+The state machine is deliberately abstract. It speaks only the language of custody — origin, transit, destination, and terminal states. It does not mention any domain, vocabulary, industry, or regulatory framework. This abstraction is what enables VSC to represent pharmaceutical shipments, food supply chains, electronics logistics, and critical mineral movements within the same verification architecture. Domain-specific meaning is added through the +Dn extension mechanism, not through modification of the state machine.
+
+### 3.2 The Four Quadrants
+
+#### 3.2.1 Q1: Origin
+
+The state in which a product comes into existence within the custody domain. This is the entry point for every product into the VSC tracking system. The event that creates a product in Q1 may be manufacturing (for finished goods), harvesting (for agricultural products), extraction (for minerals), commissioning (for serialized pharmaceutical units), or any other act that brings the product into existence as a distinct, trackable entity.
+
+**Invariant Q1-I1 (Single Entry Point):**
+A product **MUST** enter the state machine through Q1. There is no other entry point. If a product appears in any other quadrant without a recorded Q1 entry event, the chain is incomplete and **MUST** be flagged by verifiers.
+
+#### 3.2.2 Q2: In Transit
+
+The state in which a product has left its origin but has not yet reached its intended destination. This quadrant encompasses active movement (road, rail, sea, air freight), temporary storage (warehousing, consolidation centres, cold storage), transshipment (port transfers, hub-and-spoke logistics), and any intermediate handling between origin and destination.
+
+A product **MAY** cycle through Q2 multiple times via the Q2→Q2 movement transition. Each movement event records a new location, a new timestamp, and potentially new custody holder information. This enables VSC to track complex multi-leg logistics journeys within a single custody chain.
+
+**Invariant Q2-I1 (No Direct Origin-to-Destination):**
+A product **MUST NOT** transition directly from Q1 to Q3 without at least one recorded Q2 state. The movement from origin to destination must be attested by at least one SEAL with `disposition` in the Q2 set.
+
+#### 3.2.3 Q3: Destination
+
+The state in which a product has reached its intended recipient and has been accepted. Acceptance may be physical (goods received and scanned at a warehouse dock), regulatory (customs clearance granted, quarantine released), commercial (payment released against delivery confirmation), or any combination thereof.
+
+**Invariant Q3-I1 (Preceded by Transit):**
+A product **MUST NOT** be recorded in Q3 without having passed through at least one Q2 state. The `parentSeals` of a Q3 SEAL **MUST** include at least one SEAL with `disposition` in the Q2 set.
+
+**Invariant Q3-I2 (Verification at Transition):**
+Verification of product identity, quantity, condition, and regulatory compliance **SHOULD** occur at the Q2→Q3 transition. This verification may be recorded as a separate SEAL or as part of the receiving SEAL's event data.
+
+#### 3.2.4 Q4: Terminal
+
+The state in which a product ceases to exist within the custody domain. Terminal events include dispensing (pharmaceuticals administered to a patient), consumption (food products sold at retail and consumed), destruction (expired, damaged, or recalled goods destroyed), recycling (materials entering a recycling stream), export (goods leaving the tracking jurisdiction), and permanent loss (goods confirmed lost or stolen with no reasonable prospect of recovery).
+
+**Invariant Q4-I1 (Terminal Finality):**
+A product **MUST NOT** re-enter the state machine from Q4. Once a product has been recorded as dispensed, consumed, destroyed, or permanently lost, it cannot reappear in Q1, Q2, or Q3. If a product that was thought to be lost is subsequently found, or if a product is returned from a customer for resale, it **MUST** be recommissioned as a new entity in Q1 with a new chain identifier and a new serial identity. This prevents circular chains and ensures that every custody chain has a definitive end.
+
+### 3.3 State Transitions
+
+The following table defines all valid state transitions in the VSC State Machine. Each transition maps to a `how.disposition` value that **MUST** be used when issuing a SEAL that records that transition.
+
+| Transition | Name | Condition | Disposition |
+|---|---|---|---|
+| Q1 → Q2 | Shipment | Mandatory after commissioning | `in_transit` |
+| Q2 → Q3 | Receipt | Product reaches intended destination | `received` |
+| Q3 → Q4 | Termination | Product dispensed, consumed, or destroyed | `dispensed` or `destroyed` |
+| Q2 → Q2 | Movement | Intermediate transit, storage, or transshipment | `stored` or `transshipped` |
+| Q3 → Q2 | Return | Must carry justification in `+Dn` extension | `returned` |
+| Q2 → Q2 (fork) | Consignment Split | Consignment physically divided | `in_transit` |
+| Q2 → Q2 (merge) | Transformation | Multiple lots combined into one | `transformed` |
+
+The Q3→Q2 return transition is the only transition that reverses the normal flow of custody. It **MUST** be accompanied by a justification recorded in the `+Dn` extension block, explaining why the product was returned (e.g., damaged goods rejection, quality failure, recall, delivery refusal). Verifiers **MAY** flag Q3→Q2 transitions that lack adequate justification.
+
+The fork and merge transitions represent non-linear custody events. These are not separate state transitions but rather modifications to the chain topology within Q2. They are defined in detail in Section 6.
+
+### 3.4 Disposition-to-Quadrant Mapping
+
+The `how.disposition` field in each SEAL's event vector determines which state quadrant the product occupies at the time of the event. Verifiers **MUST** use this mapping to validate that the sequence of dispositions in a custody chain is consistent with the valid state transitions defined above.
+
+| Disposition Value | Quadrant | Description |
+|---|---|---|
+| `active` | Q1 | Product is active at origin (commissioned, manufactured) |
+| `in_transit` | Q2 | Product is in movement between locations |
+| `stored` | Q2 | Product is held at an intermediate location |
+| `transshipped` | Q2 | Product is being transferred between carriers |
+| `received` | Q3 | Product has been received at destination |
+| `returned` | Q2 | Product has been returned from destination |
+| `dispensed` | Q4 | Product has been dispensed to end user |
+| `destroyed` | Q4 | Product has been destroyed |
+| `transformed` | Q2 | Product has been transformed (merge event) |
+
+---
+
+## 4. The Event Matrix Envelope
+
+![Figure 3 — The Event Matrix. Five canonical dimensions standardized via GS1, WCO, ISO, and W3C. +Dn extends without modifying the core. Forward-compatible. Vocabulary-neutral.](placeholder-diagram-3.svg)
+
+### 4.1 Concept
+
+The **Event Matrix** is the five-dimensional vector representation of a supply chain event. It is the canonical form through which all events are expressed in VSC, regardless of domain, vocabulary, or regulatory context. Every SEAL carries an event vector that populates these five dimensions.
+
+The five dimensions address the fundamental questions that any supply chain event must answer: **What** product is involved? **When** did the event occur? **Where** did it happen? **Who** asserted it? **How** did it happen — what type of event, at what business step, resulting in what disposition?
+
+Each dimension draws its values from standardized vocabularies. The What dimension uses GS1 identifiers and WCO HS codes. The When dimension uses ISO 8601 timestamps. The Where dimension uses GS1 GLN/SGLN location identifiers and ISO 3166-1 jurisdiction codes. The Who dimension uses W3C Decentralized Identifiers. The How dimension uses GS1 EPCIS event types and CBV business steps and dispositions. This standardization ensures that every value in the matrix is meaningful to its respective domain authority without translation.
+
+### 4.2 Dimension: What
+
+The What dimension identifies the product or products involved in the supply chain event. It answers the question: what is this event about?
+
+| Field | Obligation | Description |
+|---|---|---|
+| `productIdentifiers` | **MUST** | Array of product identifiers. At least one entry **MUST** be present. Each entry includes a `scheme` (e.g., GTIN, SSCC), a `value`, an optional `serialNumber`, and a `schemeAuthority` (e.g., GS1). |
+| `classifications` | **SHOULD** | Array of commodity classifications. At least one HS code **SHOULD** be present for internationally traded goods. Each entry includes a `scheme` (HS), a `code`, a `description`, a `schemeAuthority` (WCO), and an `effectiveDate`. |
+| `batchOrLot` | **SHOULD** | Batch or lot identifier. **MUST** be present for pharmaceutical and food products. Enables recall identification and batch-level traceability. |
+| `expiryDate` | **MAY** | Product expiry date in ISO 8601 format. **MUST** be present for pharmaceutical and food profiles. |
+| `quantity` | **SHOULD** | Numeric quantity of product units involved in this event. |
+| `quantityUnit` | **SHOULD** | Unit of measure for the quantity field. **MUST** be present if `quantity` is present. |
+| `description` | **MAY** | Human-readable description of the product. |
+
+### 4.3 Dimension: When
+
+The When dimension captures the temporal context of the event. It answers two distinct questions: when did the event occur, and when was it recorded?
+
+| Field | Obligation | Description |
+|---|---|---|
+| `eventTime` | **MUST** | ISO 8601 date-time string with timezone offset representing when the supply chain event occurred. |
+| `timezone` | **MUST** | String identifying the timezone context (e.g., "UTC", "+05:30"). |
+| `recordedAt` | **MUST** | ISO 8601 date-time string representing when the event was recorded in the issuing system. |
+| `timePrecision` | **MUST** | One of `millisecond`, `second`, or `minute`. Indicates the precision of the event time recording. |
+
+The separation of `eventTime` and `recordedAt` is essential for supply chain auditability. In many operational scenarios — batch processing of shipping manifests, delayed data entry at remote facilities, data synchronization after connectivity restoration — the recording timestamp may differ from the event timestamp by minutes or hours. Verifiers **MUST NOT** treat a discrepancy between these two timestamps as an error unless the difference exceeds the stated `timePrecision` window by more than a reasonable operational margin.
+
+### 4.4 Dimension: Where
+
+The Where dimension captures the physical and jurisdictional location of the event. It distinguishes between the read point (where the event was captured, typically a specific scanner or gate) and the business location (the facility or site where the product was located).
+
+| Field | Obligation | Description |
+|---|---|---|
+| `readPoint` | **SHOULD** | Object with `type` (typically GLN or SGLN), `value`, and optional `name`. Identifies the specific capture point. |
+| `businessLocation` | **SHOULD** | Object with `type`, `value`, and optional `name`. Identifies the business location. |
+| `jurisdiction` | **MUST** | ISO 3166-1 alpha-2 country code identifying the legal jurisdiction in which the event occurred. Required for customs and regulatory routing. |
+| `geoCoordinates` | **MAY** | Object with `latitude` and `longitude`. Provides precise geographic coordinates. |
+
+### 4.5 Dimension: Who
+
+The Who dimension identifies the actor that asserted the event and the role in which they acted. It provides the cryptographic binding between the event data and the asserting identity.
+
+| Field | Obligation | Description |
+|---|---|---|
+| `actorDid` | **MUST** | The DID of the asserting actor. **MUST** be the same as the SEAL `issuer`. |
+| `actorRole` | **MUST** | String identifying the role in which the actor asserts this event (e.g., "manufacturer", "wholesaler", "logistics_provider", "pharmacy"). |
+| `actorLicense` | **SHOULD** | Object containing license information for regulated industries. Includes `type`, `number`, `issuingAuthority`, `validFrom`, `validUntil`, and optional `licenseCredential` reference to a separate VC. |
+| `assertionMethod` | **MUST** | The DID URL identifying the specific verification method (key) used to sign this SEAL. |
+
+### 4.6 Dimension: How
+
+The How dimension captures the nature of the event: what type of event occurred, at what business step, resulting in what disposition, and using what vocabulary to define these terms.
+
+| Field | Obligation | Description |
+|---|---|---|
+| `eventType` | **MUST** | The event type identifier. Core EPCIS-origin values (ObjectEvent, AggregationEvent, etc.) are valid when `eventTypeVocab` is `"urn:epcis:cbv:v2"`. Custom event types **MUST** use a URN-prefixed value. |
+| `eventTypeVocab` | **MUST** | URN identifying the vocabulary that defines the meaning of `eventType`. Enables verifiers to determine which validation rules to apply. |
+| `businessStep` | **MUST** | String identifying the business process step (e.g., "commissioning", "shipping", "receiving"). May use GS1 CBV values or custom vocabulary values. |
+| `disposition` | **MUST** | String identifying the condition or status of the product. **MUST** map to a valid VSC State Machine quadrant as defined in Section 3.4. |
+| `action` | **MUST** | One of `ADD`, `OBSERVE`, or `DELETE`. Follows the EPCIS action vocabulary. |
+
+---
+
+## 5. The +Dn Extension Mechanism
+
+### 5.1 Concept
+
+The **+Dn mechanism** is the vocabulary extension system of the VSC architecture. It allows any domain — pharmaceuticals, food safety, electronics, critical minerals, sustainability reporting, trade finance — to define vocabularies that extend the five-dimensional Event Matrix with domain-specific data fields, without modifying the core architecture.
+
+The "+Dn" name reflects the mathematical concept of additional dimensions. Just as a coordinate system can be extended from three dimensions to n-dimensions without invalidating the original axes, the VSC Event Matrix can be extended from five dimensions to five-plus-n dimensions. Each extension occupies a numbered slot (+D1, +D2, +D3, ... +Dn) within the `extensions` block of the SEAL. Each slot can hold one or more vocabulary instances, identified by their unique vocabulary URNs.
+
+### 5.2 Structural Position
+
+All +Dn vocabularies are carried in the `extensions` block of the SEAL, under the reserved `+Dn` key. The `+Dn` key is reserved — no other extension mechanism may use this key, and no other top-level SEAL property may be named `+Dn`.
+
+The `extensions` block **MUST** be present in every SEAL, even if no extensions are used. An empty `+Dn` object signals that the SEAL carries no domain-specific extensions. This ensures that verifiers can always locate the extensions block at a known position in the SEAL structure.
+
+### 5.3 Vocabulary Definition Requirements
+
+A +Dn vocabulary **MUST** be defined by a vocabulary specification that includes all of the following elements:
+
+| Element | Description | Obligation |
+|---|---|---|
+| Vocabulary URN | Globally unique identifier for the vocabulary | **MUST** |
+| Dimension Key | The +Dn slot key used in the SEAL | **MUST** |
+| JSON Schema | Machine-readable schema defining the vocabulary structure | **MUST** |
+| Semantic Mapping | Documentation mapping vocabulary terms to the core five dimensions | **MUST** |
+| Required Fields | List of fields that must be populated for vocabulary conformance | **MUST** |
+| Steward DID | DID of the organization maintaining the vocabulary | **MUST** |
+| License | License under which the vocabulary schema is published | **MUST** |
+
+### 5.4 Forward Compatibility
+
+Forward compatibility is the essential property that enables VSC to evolve without breaking existing implementations. When a verifier encounters a SEAL containing a +Dn vocabulary it does not recognize, it **MUST** apply the following rules:
+
+1. Process the core five-dimensional event vector without error — the unrecognized extension does not invalidate the core data.
+2. Preserve the unknown vocabulary data unchanged in any stored or forwarded copies of the SEAL.
+3. **MUST NOT** reject the SEAL solely due to the presence of unrecognized extensions.
+4. **MAY** signal a warning indicating that the SEAL contains unverified extension data.
+
+These rules ensure that new vocabularies can be deployed incrementally. A pharmaceutical vocabulary can be adopted by pharma supply chain participants without requiring food supply chain participants to upgrade their verifiers. Each domain evolves at its own pace, on its own infrastructure, without creating breaking changes for others.
+
+### 5.5 Vocabulary Equality
+
+All registered +Dn vocabularies have equal standing in the VSC ecosystem. The VSC Community Group **MUST NOT** designate any vocabulary as preferred, recommended, mandatory, or privileged. No vocabulary is more "official" than any other. Vocabularies compete on adoption and utility — the vocabularies that provide value to supply chain participants will be widely implemented; those that do not will not. This neutrality is a constitutional principle of VSC governance and is further protected by the forkability provisions in Appendix E.
+
+---
+
+## 6. Chain of Custody Linking
+
+![Figure 4 — Chain of Custody: Linear chains for standard custody. Fork for consignment splits. Merge for lot combinations. Correction for immutable error handling.](placeholder-diagram-4.svg)
+
+### 6.1 Concept
+
+Chain of custody is the mathematically verifiable sequence of SEALs that tracks a product or consignment through the supply chain. Each SEAL in the chain is cryptographically linked to its predecessors through the `parentSeals` array, creating a directed acyclic graph that can be traversed forward (from origin to current location) or backward (from any point to origin).
+
+Real supply chains are not always linear. Consignments are split at distribution centres — a single pallet becomes multiple cases sent to different destinations. Lots are combined in manufacturing — multiple input ingredients become a single output product. The VSC chain of custody model supports all of these topologies through a multi-parent, multi-child linking structure.
+
+### 6.2 Chain of Custody Structure
+
+| Field | Obligation | Description |
+|---|---|---|
+| `chainId` | **MUST** | Globally unique identifier for this custody chain. All SEALs that belong to the same logical chain share this identifier. |
+| `sequenceNumber` | **MUST** | Monotonically increasing integer. The initial event in a chain has sequence number 1. Each subsequent event increments by 1. |
+| `parentSeals` | **MUST** | Array of SEAL identifiers. Empty for initial events. Contains one entry for linear chains. Contains multiple entries for merge or transformation events. |
+| `childSeals` | **MAY** | Array of SEAL identifiers. Often empty at creation time and populated retroactively. Multiple entries indicate a fork event. |
+| `topology` | **MUST** | One of `linear`, `fork`, `merge`, or `transform`. |
+| `topologyNote` | **SHOULD** | Human-readable justification for non-linear topologies. |
+
+### 6.3 Linear Chains
+
+Each SEAL has exactly one parent (or none for the initial event). `topology` **MUST** be `"linear"`. `parentSeals` contains at most one entry.
+
+### 6.4 Consignment Fork
+
+When a consignment is divided, the split SEAL **MUST** set `topology: "fork"` with all child SEAL identifiers in `childSeals`. Each child **MUST** reference the fork SEAL in `parentSeals`.
+
+### 6.5 Transformation Merge
+
+When lots are combined, the merge SEAL **MUST** set `topology: "merge"` or `"transform"` with all input SEAL identifiers in `parentSeals`.
+
+### 6.6 Multiple Concurrent Chains
+
+A single consignment **MAY** participate in multiple chains simultaneously via distinct `chainId` values — for example, a logistics chain and a financial chain for the same shipment.
+
+---
+
+## 7. Securing Mechanisms
+
+### 7.1 DID-Based Identity
+
+All actors **MUST** be identified by DID-CORE Decentralized Identifiers. Implementations **MUST** support `did:web`. Additional DID methods are **OPTIONAL**.
+
+### 7.2 Proof Formats
+
+VSC **MUST** support VC-DATA-INTEGRITY Linked Data Proofs using `Ed25519Signature2020`. At least one selective disclosure mechanism **MUST** be supported; BBS-2023 is **RECOMMENDED**.
+
+### 7.3 Selective Disclosure
+
+A **selective disclosure presentation** **MUST** always include all "Always Disclosed" fields. "Selectively Disclosable" fields **MAY** be withheld subject to the requester's authorization level. The complete field registry is in Appendix C.
+
+### 7.4 DLT Agnosticism
+
+VSC **MUST NOT** require Distributed Ledger Technology. The `did:web` method operates on standard DNS/TLS/HTTPS infrastructure.
+
+---
+
+## 8. Correction Protocol
+
+![Figure 5 — Correction Protocol: Immutable error handling with cryptographically linked correction SEALs. Original SEALs are never modified — errors are corrected with new attestations that preserve the complete audit trail.](placeholder-diagram-5.svg)
+
+### 8.1 Concept
+
+Once created, a SEAL **MUST NOT** be modified. When an error is discovered, a **correction SEAL** is issued with `correctionOf` set to the erroneous SEAL's `id`. The erroneous SEAL remains permanently in the chain; the correction SEAL adds a new, corrected attestation that supersedes it.
+
+### 8.2 Correction SEAL Structure
+
+A correction SEAL has the same structure as an original SEAL with the following distinguishing characteristics:
+
+| Field | Value in Correction SEAL |
+|---|---|
+| `correctionOf` | The `id` of the erroneous SEAL being corrected |
+| `eventVector` | The corrected event data |
+| `chainOfCustody.parentSeals` | The erroneous SEAL's `id` — the correction SEAL links to the erroneous SEAL as its parent in the correction chain |
+| `chainOfCustody.chainId` | A new chain identifier — correction chains are distinct from custody chains |
+| `chainOfCustody.topology` | `"correction"` |
+| `+Dn` extension | **MUST** include a `correctionReason` field explaining what was corrected and why |
+
+### 8.3 Verifier Behavior for Correction Chains
+
+When a verifier encounters a SEAL where `correctionOf` is not null:
+
+1. The verifier **MUST** verify the cryptographic proof of the correction SEAL.
+2. The verifier **MUST** verify that the issuer of the correction SEAL is the same as the issuer of the erroneous SEAL, or is an authorized delegate with documented authority to correct on the original issuer's behalf.
+3. The verifier **MUST** verify that the correction SEAL's `chainOfCustody.parentSeals` includes the erroneous SEAL's `id`.
+4. The verifier **MUST** retain both the erroneous SEAL and the correction SEAL in its records — the original is not discarded.
+5. For downstream processing, the verifier **MUST** use the corrected event data from the correction SEAL, not the data from the erroneous SEAL.
+6. The verifier **MUST** flag the original SEAL as superseded in any audit reports, with a reference to the correction SEAL.
+
+Multiple corrections **MAY** be chained. If a correction SEAL itself contains an error, a new correction SEAL may be issued with `correctionOf` pointing to the previous correction SEAL. Verifiers **MUST** follow the chain of corrections to its terminus and use the most recent correction SEAL as the source of truth.
+
+### 8.4 Multi-Party Correction
+
+In some scenarios, a SEAL issued by one actor may need to be corrected by a different actor. For example, a logistics provider may discover that a manufacturer's shipment SEAL contains an incorrect quantity. In such cases:
+
+- The discovering actor **MAY** issue a correction SEAL if they have documented delegated authority.
+- If no delegation exists, the discovering actor **SHOULD** issue a new SEAL (not a correction) that documents the discrepancy, with the correct data in its own `eventVector` and a reference to the erroneous SEAL in a `+Dn` extension field.
+- The erroneous SEAL's issuer **SHOULD** be notified and **MAY** issue their own correction SEAL.
+
+---
+
+## 9. Credential Presentation Protocol
+
+![Figure 6 — Credential Presentation Protocol: Verifier sends Presentation Request with authorization level. Holder responds with selectively disclosed Verifiable Presentations.](placeholder-diagram-6.svg)
+
+### 9.1 Concept
+
+The Credential Presentation Protocol (CPP) defines how verifiers request SEALs from holders and how holders respond with presentations. The protocol is transport-agnostic — it can be carried over HTTPS, DIDComm, or any other secure messaging channel — and defines the message formats, authorization levels, and processing rules that ensure consistent behavior across all VSC implementations.
+
+### 9.2 Presentation Request
+
+A **presentation request** is a message sent by a verifier to a holder requesting one or more SEALs or SEAL presentations. The request **MUST** include:
+
+| Field | Obligation | Description |
+|---|---|---|
+| `requestId` | **MUST** | Unique identifier for this request, enabling correlation of response to request. |
+| `verifierDid` | **MUST** | The DID of the requesting verifier. |
+| `holderDid` | **MUST** | The DID of the holder from whom SEALs are requested. |
+| `requestedSeals` | **MUST** | Array of criteria identifying which SEALs are requested. Criteria may include chain identifiers, time ranges, product identifiers, or event types. |
+| `authorizationLevel` | **MUST** | One of `public`, `partner`, `regulatory`, or `full`. Determines which selectively disclosable fields may be included. |
+| `purposeOfUse` | **SHOULD** | Human-readable statement of why the SEALs are being requested. |
+| `legalBasis` | **SHOULD** | Legal or regulatory basis for the request (e.g., "DSCSA 582", "FSMA 204", "Customs Inspection"). |
+| `responseDeadline` | **MAY** | ISO 8601 timestamp by which a response is requested. |
+
+### 9.3 Presentation Response
+
+A **presentation response** is a message sent by a holder to a verifier in response to a presentation request. The response **MUST** include:
+
+| Field | Obligation | Description |
+|---|---|---|
+| `responseId` | **MUST** | Unique identifier for this response. |
+| `requestId` | **MUST** | The `requestId` from the presentation request being responded to. |
+| `presentations` | **MUST** | Array of SEAL presentations. Each presentation is a Verifiable Presentation (VC-DATA-MODEL) containing one or more SEALs, with selective disclosure applied according to the request's `authorizationLevel`. |
+| `status` | **MUST** | One of `complete`, `partial`, or `denied`. |
+| `statusReason` | **SHOULD** | Human-readable explanation when `status` is `partial` or `denied`. |
+
+### 9.4 Authorization Levels
+
+The authorization level in a presentation request determines which fields from the selective disclosure registry (Appendix C) the holder may include in the presented SEALs. The four levels are:
+
+| Level | Description | Typical Use |
+|---|---|---|
+| `public` | Only "Always Disclosed" fields are included. No selectively disclosable fields are revealed. | Public product verification, consumer scanning |
+| `partner` | Selectively disclosable fields classified as "Partner" in the registry are included. Commercial and operational data is visible. | Supply chain partners, logistics providers |
+| `regulatory` | All fields except those classified as "Sensitive-Commercial" are included. Full regulatory data is visible. | FDA inspectors, customs authorities |
+| `full` | All fields are included. Holder **SHOULD** verify the legal right of the requester before responding at this level. | Auditors with legal mandate, court orders |
+
+### 9.5 Transport Bindings
+
+The Credential Presentation Protocol is transport-agnostic. Implementations **MUST** support HTTPS as a transport binding. The following additional transport bindings are **OPTIONAL**:
+
+- **DIDComm v2** — for asynchronous, DID-authenticated messaging
+- **WebSocket** — for real-time verification scenarios
+- **QR Code / Offline** — for physical-to-digital verification (e.g., scanning a product code at a retail point)
+
+---
+
+## 10. Profile: Pharmaceutical Finished Goods
+
+![Figure 7 — Pharmaceutical Finished Goods Profile: Constrains VSC Core for DSCSA and FMD compliance.](placeholder-diagram-7.svg)
+
+### 10.1 Scope
+
+This profile constrains the VSC Core Specification for pharmaceutical finished goods supply chains. It is designed to satisfy the traceability requirements of the U.S. Drug Supply Chain Security Act (DSCSA) and the EU Falsified Medicines Directive (FMD), while remaining compatible with other pharmaceutical regulatory frameworks.
+
+This profile does not modify the core VSC architecture. All requirements in this section are *additional constraints* on the core specification, not replacements. Implementations claiming conformance to this profile **MUST** also satisfy all core conformance requirements.
+
+### 10.2 Pharma Vocabulary Binding
+
+Pharmaceutical implementations **MUST** include the `+D1` vocabulary in the `extensions` block. The `+D1` slot is reserved for pharmaceutical-specific data.
+
+| Field | Obligation | Description |
+|---|---|---|
+| `+D1.productNDC` | **MUST** | U.S. National Drug Code (NDC) for products in U.S. distribution |
+| `+D1.productMAH` | **MUST** | Marketing Authorization Holder identifier (EMA or national competent authority) |
+| `+D1.manufacturingSite` | **MUST** | GMP certificate reference for the manufacturing site |
+| `+D1.serializationFormat` | **MUST** | One of `GS1_Datamatrix`, `GS1_128`, or `custom` |
+| `+D1.transactionStatement` | **MUST** | DSCSA transaction statement data (TI, TH, TS) |
+| `+D1.temperatureRange` | **SHOULD** | Object with `minCelsius` and `maxCelsius` for cold chain products |
+| `+D1.excursionDetected` | **MAY** | Boolean indicating whether a temperature excursion was detected |
+| `+D1.quarantineStatus` | **MAY** | One of `none`, `quarantined`, `released`, `rejected` |
+
+### 10.3 Mandatory Core Fields
+
+In addition to all core mandatory fields, pharmaceutical SEALs **MUST** populate the following core fields:
+
+- `eventVector.what.productIdentifiers` — at minimum, GTIN with serial number (SGTIN)
+- `eventVector.what.batchOrLot`
+- `eventVector.what.expiryDate`
+- `eventVector.who.actorLicense`
+
+### 10.4 Verification Rules
+
+Pharma profile verifiers **MUST** perform all core verifications plus the following pharma-specific checks:
+
+1. Verify that the product identifier includes a valid GTIN and serial number.
+2. Verify that the batch/lot number is present and matches the product master data.
+3. Verify that the expiry date has not passed (unless the event is a Q4 termination event acknowledging expiry).
+4. Verify that the actor's license is valid at the time of the event (check `validFrom` and `validUntil` against `eventTime`).
+5. Verify that the transaction statement (TI/TH/TS) is present and correctly structured for DSCSA compliance.
+6. If `+D1.quarantineStatus` is `quarantined`, flag the product as not eligible for dispensing.
+
+---
+
+## 11. Profile: Food Safety
+
+### 11.1 Scope
+
+This profile constrains the VSC Core Specification for food supply chains. It is designed to satisfy the traceability requirements of the FDA Food Safety Modernization Act Section 204 (FSMA-204) and the Codex Alimentarius principles for food traceability, while remaining compatible with other food safety regulatory frameworks including EU Regulation 178/2002.
+
+### 11.2 Food Safety Vocabulary Binding
+
+Food safety implementations **MUST** include the `+D2` vocabulary in the `extensions` block. The `+D2` slot is reserved for food-specific data.
+
+| Field | Obligation | Description |
+|---|---|---|
+| `+D2.cteList` | **MUST** | Array of Critical Tracking Events for this product category |
+| `+D2.kdeList` | **MUST** | Array of Key Data Elements associated with each CTE |
+| `+D2.foodCategory` | **MUST** | Codex Alimentarius food category code |
+| `+D2.harvestDate` | **SHOULD** | ISO 8601 date of harvest (for produce, seafood, etc.) |
+| `+D2.productionDate` | **SHOULD** | ISO 8601 date of production or processing |
+| `+D2.useByDate` | **MUST** | ISO 8601 date for use-by or best-before |
+| `+D2.temperatureHistory` | **SHOULD** | Array of temperature readings with timestamps for cold chain products |
+| `+D2.allergens` | **MUST** | Array of allergen codes as defined by Codex Alimentarius |
+| `+D2.certifications` | **MAY** | Array of food safety certifications (e.g., organic, fair trade, halal, kosher) |
+
+### 11.3 CTE and KDE Mapping
+
+The FDA FSMA 204 rule defines Critical Tracking Events (CTEs) and Key Data Elements (KDEs) for each point in the food supply chain. This profile maps CTEs to VSC event types and KDEs to event vector fields and +D2 vocabulary fields.
+
+| CTE | VSC Event Type | KDE Mapping |
+|---|---|---|
+| Harvesting | ObjectEvent with `action: ADD` | `what.productIdentifiers`, `+D2.harvestDate`, `where.businessLocation` |
+| Cooling | ObjectEvent with `action: OBSERVE` | `+D2.temperatureHistory`, `when.eventTime` |
+| Packing (Initial) | AggregationEvent with `action: ADD` | `what.productIdentifiers`, `+D2.useByDate`, `+D2.allergens` |
+| Shipping | ObjectEvent with `disposition: in_transit` | `when.eventTime`, `where.businessLocation`, `who.actorDid` |
+| Receiving | ObjectEvent with `disposition: received` | `when.eventTime`, `where.businessLocation`, `who.actorDid` |
+| Transforming | TransformationEvent | `+D2.productionDate`, `what.productIdentifiers` (new product), `chainOfCustody.parentSeals` (input products) |
+
+### 11.4 Recall Readiness
+
+Food safety profile implementations **MUST** support the following recall-related capabilities:
+
+- **One-up, one-back traceability:** For any SEAL in the chain, verifiers **MUST** be able to identify the immediate previous SEAL (one back) and the immediate next SEAL (one up) within 24 hours of a recall notification.
+- **Full chain reconstruction:** Verifiers **MUST** be able to traverse the entire custody chain from origin to current location within 72 hours of a recall notification.
+- **Batch isolation:** When a batch/lot is identified for recall, verifiers **MUST** be able to identify all SEALs containing that batch/lot identifier within 4 hours.
+
+---
+
+## Appendix A: Requirements Mapping
+
+This appendix provides the complete mapping from requirements established in VSC-REQUIREMENTS to the normative sections of this specification that satisfy each requirement.
+
+| Requirement ID | Requirement | Specification Section |
+|---|---|---|
+| REQ-SEAL-001 | Immutable Event Attestation | Section 2 |
+| REQ-SEAL-002 | Normative Field Structure | Section 2.3 |
+| REQ-SEAL-003 | Correction Protocol | Section 8 |
+| REQ-SM-001 | State Machine Model | Section 3 |
+| REQ-SM-002 | Disposition Mapping | Section 3.4 |
+| REQ-EM-001 | Five-Dimensional Event Matrix | Section 4 |
+| REQ-EM-002 | Standardized Vocabularies | Section 4 |
+| REQ-EXT-001 | Vocabulary Extension System | Section 5 |
+| REQ-EXT-002 | Forward Compatibility | Section 5.4 |
+| REQ-EXT-003 | Vocabulary Neutrality | Section 5.5 |
+| REQ-CHAIN-001 | Chain of Custody Linking | Section 6 |
+| REQ-CHAIN-002 | Fork and Merge Topology | Sections 6.3, 6.4 |
+| REQ-SEC-001 | DID-Based Identity | Section 7.1 |
+| REQ-SEC-002 | Cryptographic Proof Binding | Section 7.2 |
+| REQ-SEC-003 | Selective Disclosure | Section 7.3 |
+| REQ-CPP-001 | Credential Presentation Protocol | Section 9 |
+| REQ-CPP-002 | Authorization Levels | Section 9.3 |
+| REQ-PHARMA-001 | DSCSA Compliance | Section 10 |
+| REQ-PHARMA-002 | FMD Compliance | Section 10 |
+| REQ-FOOD-001 | FSMA 204 Compliance | Section 11 |
+| REQ-FOOD-002 | Recall Readiness | Section 11.4 |
+
+---
+
+## Appendix B: Complete SEAL Example
+
+The following is a complete, valid VSC SEAL for a pharmaceutical product shipment. It demonstrates all normative fields populated with realistic data.
 
 ```json
 {
-  "status": "authenticated",
-  "provider": "did:provider:one#mpc-node",
-  "currentEpoch": 42,
-  "lastRotation": "2024-05-15T10:30:00Z",
-  "signature": "0x9a8b7c6d..."
-}
-```
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://w3c-cg.github.io/vsc-core/contexts/vsc-v1.jsonld"
+  ],
+  "type": ["VerifiableCredential", "VSC-SEAL"],
+  "id": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "issuer": "did:web:pharma-manufacturer.example.com",
+  "issuanceDate": "2026-05-16T08:30:05Z",
 
-**Phase 2: MPC Signing Ceremony**
+  "sealVersion": "1.0",
+  "sealTimestamp": "2026-05-16T08:30:05.123Z",
 
-```
-POST /mpc/sign HTTP/1.1
-Host: provider1.example.com
-Content-Type: application/json
-
-{
-  "protocol": "did-kr-recovery-v1",
-  "sessionId": "sess_abc123def456",
-  "operation": {
-    "type": "update-did",
-    "newDocument": {
-      "id": "did:example:123",
-      "verificationMethod": [
+  "eventVector": {
+    "what": {
+      "productIdentifiers": [
         {
-          "id": "did:example:123#new-key-1",
-          "type": "Ed25519VerificationKey2020",
-          "controller": "did:example:123",
-          "publicKeyMultibase": "z6Mkq3..."
+          "scheme": "GTIN",
+          "value": "00312345678904",
+          "serialNumber": "ABC123XYZ789",
+          "schemeAuthority": "GS1"
         }
       ],
-      "authentication": ["did:example:123#new-key-1"]
+      "classifications": [
+        {
+          "scheme": "HS",
+          "code": "3004.90",
+          "description": "Medicaments consisting of mixed or unmixed products",
+          "schemeAuthority": "WCO",
+          "effectiveDate": "2022-01-01"
+        }
+      ],
+      "batchOrLot": "BATCH-2026-05-001",
+      "expiryDate": "2028-05-15",
+      "quantity": 500,
+      "quantityUnit": "units",
+      "description": "ExampleRx 10mg tablets, 30-count bottle"
+    },
+    "when": {
+      "eventTime": "2026-05-16T08:30:00Z",
+      "timezone": "UTC",
+      "recordedAt": "2026-05-16T08:30:05Z",
+      "timePrecision": "second"
+    },
+    "where": {
+      "readPoint": {
+        "type": "SGLN",
+        "value": "urn:epc:id:sgln:0614141.00001.0",
+        "name": "Shipping Dock Scanner 3"
+      },
+      "businessLocation": {
+        "type": "GLN",
+        "value": "0614141000012",
+        "name": "PharmaCorp Manufacturing Facility — Mumbai"
+      },
+      "jurisdiction": "IN",
+      "geoCoordinates": {
+        "latitude": 19.0760,
+        "longitude": 72.8777
+      }
+    },
+    "who": {
+      "actorDid": "did:web:pharma-manufacturer.example.com",
+      "actorRole": "manufacturer",
+      "actorLicense": {
+        "type": "manufacturing_license",
+        "number": "MFG-2026-IND-0042",
+        "issuingAuthority": "Central Drugs Standard Control Organization",
+        "validFrom": "2026-01-01",
+        "validUntil": "2030-12-31",
+        "licenseCredential": "urn:uuid:license-credential-123"
+      },
+      "assertionMethod": "did:web:pharma-manufacturer.example.com#key-1"
+    },
+    "how": {
+      "eventType": "ObjectEvent",
+      "eventTypeVocab": "urn:epcis:cbv:v2",
+      "businessStep": "shipping",
+      "disposition": "in_transit",
+      "action": "OBSERVE"
     }
   },
-  "commitment": "0x3e4f5a6b..."
+
+  "extensions": {
+    "+Dn": {
+      "+D1": {
+        "vocabularyUrn": "urn:vsc:vocab:pharma:v1",
+        "productNDC": "12345-6789-01",
+        "productMAH": "EU/1/26/123/001",
+        "manufacturingSite": "GMP-CERT-IND-MUM-2026",
+        "serializationFormat": "GS1_Datamatrix",
+        "transactionStatement": {
+          "TI": "urn:uuid:ti-document-2026-001",
+          "TH": "did:web:pharma-manufacturer.example.com",
+          "TS": "2026-05-16T08:30:00Z"
+        },
+        "temperatureRange": {
+          "minCelsius": 15,
+          "maxCelsius": 25
+        },
+        "excursionDetected": false,
+        "quarantineStatus": "none"
+      }
+    }
+  },
+
+  "chainOfCustody": {
+    "chainId": "urn:uuid:chain-pharma-2026-001",
+    "sequenceNumber": 2,
+    "parentSeals": ["urn:uuid:commissioning-seal-2026-001"],
+    "childSeals": [],
+    "topology": "linear"
+  },
+
+  "correctionOf": null,
+
+  "credentialSubject": {
+    "id": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+
+  "proof": {
+    "type": "Ed25519Signature2020",
+    "created": "2026-05-16T08:30:05Z",
+    "verificationMethod": "did:web:pharma-manufacturer.example.com#key-1",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z5LbBqYhG..."
+  }
 }
 ```
 
 ---
 
-## 13. Protocol Diagrams
+## Appendix C: Selective Disclosure Field Registry
 
-### 13.1 Figure 1: Type A — Social ZKP Recovery Flow
+This registry classifies every field in the VSC SEAL structure for selective disclosure purposes. Fields classified as "Always Disclosed" **MUST** be included in every presentation. Fields classified as "Selectively Disclosable" **MAY** be withheld based on the requester's authorization level.
 
-```
-sequenceDiagram
-    participant User as User (Recovering Party)
-    participant G1 as Guardian 1
-    participant G2 as Guardian 2
-    participant G3 as Guardian 3
-    participant G4 as Guardian 4
-    participant G5 as Guardian 5
-    participant Aggregator as ZKP Aggregator
-    
-    Note over User: Initiates recovery (threshold=3)
-    
-    User->>G1: Request recovery (nonce, commitments)
-    User->>G2: Request recovery (nonce, commitments)
-    User->>G3: Request recovery (nonce, commitments)
-    
-    G1->>G1: Generate ZKP (share, commitments)
-    G2->>G2: Generate ZKP (share, commitments)
-    G3->>G3: Generate ZKP (share, commitments)
-    
-    G1-->>User: ZKP Proof 1
-    G2-->>User: ZKP Proof 2
-    G3-->>User: ZKP Proof 3
-    
-    User->>Aggregator: Submit proofs (threshold=3)
-    Aggregator->>Aggregator: Verify ZKPs
-    Aggregator->>Aggregator: Lagrange interpolation
-    
-    Aggregator-->>User: Recovered secret
-    User->>User: Generate new DID keys
-    User->>DID Method: Update DID Document
-```
-
-### 13.2 Figure 2: Type B — VDF Time-Locked Inheritance
-
-```
-sequenceDiagram
-    participant User as Original User
-    participant Beneficiary as Beneficiary
-    participant VDF as VDF Computation
-    participant Storage as Blockchain/Storage
-    participant DID as DID Method
-    
-    Note over User: Setup Phase
-    User->>User: Generate master seed
-    User->>User: Encrypt seed with VDF-derived key
-    User->>DID: Publish encrypted lockbox + VDF params
-    
-    Note over User: User becomes inactive
-    Note over Beneficiary: After P1Y, initiates inheritance
-    
-    Beneficiary->>VDF: Compute VDF (difficulty=1M)
-    VDF->>VDF: Sequential squaring (30 days)
-    VDF-->>Beneficiary: VDF output + proof
-    
-    Beneficiary->>Beneficiary: Derive decryption key from VDF output
-    Beneficiary->>Storage: Fetch encrypted lockbox
-    Beneficiary->>Beneficiary: Decrypt seed
-    Beneficiary->>Beneficiary: Derive DID keys
-    Beneficiary->>DID: Update DID Document with new controller
-```
-
-### 13.3 Figure 3: Type C — MPC Recovery with Share Refreshment
-
-```
-sequenceDiagram
-    participant User as User
-    participant P1 as Provider 1 (Epoch 42)
-    participant P2 as Provider 2 (Epoch 42)
-    participant P3 as Provider 3 (Epoch 41)
-    participant Coord as MPC Coordinator
-    
-    Note over User,P3: Recovery Initiated
-    
-    User->>P1: Authenticate (VC/Passkey)
-    User->>P2: Authenticate (VC/Passkey)
-    User->>P3: Authenticate (VC/Passkey)
-    
-    P1-->>User: Auth success (epoch=42)
-    P2-->>User: Auth success (epoch=42)
-    P3-->>User: Auth success (epoch=41)
-    
-    Note over User: Detects epoch skew
-    
-    User->>P3: Request catch-up
-    P3->>P1: Request refresh transcript (epochs 41→42)
-    P1-->>P3: Verifiable refresh proof
-    P3->>P3: Verify and update to epoch 42
-    P3-->>User: Ready (epoch=42)
-    
-    User->>Coord: Initiate MPC signing
-    Coord->>P1: Signing request (nonce)
-    Coord->>P2: Signing request (nonce)
-    Coord->>P3: Signing request (nonce)
-    
-    P1-->>Coord: Partial signature 1
-    P2-->>Coord: Partial signature 2
-    P3-->>Coord: Partial signature 3
-    
-    Coord->>Coord: Aggregate signatures (threshold=2)
-    Coord-->>User: Final signature
-    User->>DID Method: Update DID Document
-```
-
-### 13.4 Figure 4: Recovery-Loop Prevention Check
-
-```
-graph TD
-    subgraph "Graph 1: Loop Detected"
-        A1[did:example:123] -->|recovery| B1[did:guardian:abc]
-        B1 -->|controller| A1
-    end
-    
-    subgraph "Graph 2: Valid Tree"
-        A2[did:example:123] -->|recovery| C2[did:guardian:def]
-        C2 -->|controller| D2[did:guardian:ghi]
-        D2 -->|controller| C2
-    end
-    
-    style A1 fill:#f9f,stroke:#333,stroke-width:4px
-    style B1 fill:#ff9,stroke:#f00,stroke-width:2px
-    style A2 fill:#9f9,stroke:#333,stroke-width:4px
-    style C2 fill:#9f9,stroke:#333,stroke-width:2px
-    style D2 fill:#9f9,stroke:#333,stroke-width:2px
-```
-
----
-
-## 14. Test Vectors
-
-### 14.1 Type A Test Vector
-
-**Setup:**
-- Secret: `s = 42`
-- Threshold: `t = 3`
-- Guardians: `n = 5`
-- Curve: Ed25519
-- Prime: `2^252 + 27742317777372353535851937790883648493`
-
-**Polynomial:**
-```
-P(x) = 42 + 17x + 8x²
-```
-
-**Shares:**
-```
-s₁ = 67
-s₂ = 104
-s₃ = 153
-s₄ = 214
-s₅ = 287
-```
-
-**Commitments (generator g=2):**
-```
-C₀ = 2⁴² mod p = 4398046511104
-C₁ = 2¹⁷ mod p = 131072
-C₂ = 2⁸ mod p = 256
-```
-
-**Recovery with shares s₁, s₃, s₅:**
-```
-Lagrange interpolation:
-λ₁ = (0-3)(0-5)/((1-3)(1-5)) = 15/8 mod p
-λ₃ = (0-1)(0-5)/((3-1)(3-5)) = -5/4 mod p
-λ₅ = (0-1)(0-3)/((5-1)(5-3)) = 3/8 mod p
-
-s = 67×(15/8) + 153×(-5/4) + 287×(3/8) = 42
-```
-
-### 14.2 Type B Test Vector
-
-**Master Seed:** `0x7f3a9b8c2d5e1f4a3b6c7d8e9f0a1b2c`  
-**Derivation Path:** `m/44'/0'/0'/0/0`  
-**Derived Private Key:** `0x9d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a`
-
-**VDF Parameters:**
-```
-N = 0x8f3b7a2c5d6e1f4a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0 (2048-bit)
-x = 0x2d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f
-T = 10000
-y = x^(2^10000) mod N = 0x7c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f
-π = 0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d
-```
-
-**Verification:** `π^(2^(T/2)) * x^(2^T mod 2^(T/2)) mod N = y` ✓
-
-### 14.3 Type C Test Vector
-
-**fROST with t=2, n=3:**
-
-**Key Generation:**
-```
-Group Public Key: 0x3a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f
-Share 1: 0x8c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0
-Share 2: 0x2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c
-Share 3: 0x7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a
-```
-
-**Signing with providers 1 and 2 (message = "update-did"):**
-
-**Nonces:**
-```
-r₁ = 0x4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e
-r₂ = 0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1
-```
-
-**Commitments:**
-```
-R₁ = g^r₁ = 0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c
-R₂ = g^r₂ = 0x7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3
-```
-
-**Challenge:** `c = H(R₁||R₂||m) = 0x2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d`
-
-**Partial Signatures:**
-```
-z₁ = r₁ + c·s₁ = 0x5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0
-z₂ = r₂ + c·s₂ = 0x1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a
-```
-
-**Final Signature:**
-```
-R = R₁ + R₂ = 0x8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d
-z = z₁ + z₂ = 0x4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a
-```
-
----
-
-## 15. References
-
-### 15.1 Normative References
-
-- **DID-CORE** — Decentralized Identifier Specification v1.0, [https://www.w3.org/TR/did-core/](https://www.w3.org/TR/did-core/)
-- **RFC2119** — Key words for use in RFCs, [https://www.rfc-editor.org/rfc/rfc2119](https://www.rfc-editor.org/rfc/rfc2119)
-- **RFC8174** — Ambiguity of Uppercase vs Lowercase in RFC2119, [https://www.rfc-editor.org/rfc/rfc8174](https://www.rfc-editor.org/rfc/rfc8174)
-- **BIP32** — Hierarchical Deterministic Wallets, [https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
-- **BIP39** — Mnemonic code for generating deterministic keys, [https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)
-- **FROST** — Flexible Round-Optimized Schnorr Threshold Signatures, [https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/)
-- **VDF** — Verifiable Delay Functions, Cryptology ePrint Archive, Report 2018/601, [https://eprint.iacr.org/2018/601](https://eprint.iacr.org/2018/601)
-- **FELDMAN** — Feldman's Verifiable Secret Sharing, [https://doi.org/10.1007/3-540-47721-7_17](https://doi.org/10.1007/3-540-47721-7_17)
-
-### 15.2 Informative References
-
-- **SOCIAL-RECOVERY** — Social Key Recovery for Self-Sovereign Identity, [https://doi.org/10.1109/ICBC48266.2020.9169451](https://doi.org/10.1109/ICBC48266.2020.9169451)
-- **MPC-WALLET** — Threshold Signatures for Cryptographic Wallets, [https://eprint.iacr.org/2020/086](https://eprint.iacr.org/2020/086)
-- **TIME-LOCK** — Time-Lock Encryption with Verifiable Delay Functions, [https://eprint.iacr.org/2019/619](https://eprint.iacr.org/2019/619)
-- **ZKP-AUTH** — Zero-Knowledge Proofs for Authentication, [https://doi.org/10.1145/3133956.3134101](https://doi.org/10.1145/3133956.3134101)
-- **PROACTIVE** — Proactive Secret Sharing, [https://doi.org/10.1007/3-540-48071-4_2](https://doi.org/10.1007/3-540-48071-4_2)
-
----
-
-## 16. Acknowledgements
-
-The editor would like to thank the members of the decentralized identity community for their valuable feedback and contributions. Special thanks to the cryptographic reviewers who provided security analysis of the VSS, VDF, and fROST implementations, and to the privacy researchers who contributed to the guardian privacy enhancements.
-
----
-
-## Appendix A: Implementation Checklist
-
-| Requirement | Status | Notes |
-|-------------|--------|-------|
-| Type A: VSS implementation | ☐ | Feldman's VSS with Pedersen |
-| Type A: ZKP implementation | ☐ | Schnorr proofs of share |
-| Type A: Guardian privacy | ☐ | Hashed identifiers |
-| Type B: HD key derivation | ☐ | BIP-32 compatible |
-| Type B: VDF implementation | ☐ | Wesolowski or Pietrzak |
-| Type B: VDF calibration | ☐ | Hardware-agnostic parameters |
-| Type C: fROST implementation | ☐ | Threshold signatures |
-| Type C: Share refreshment | ☐ | Proactive secret sharing |
-| Type C: Epoch synchronization | ☐ | Catch-up protocol |
-| Recovery-loop detection | ☐ | Graph acyclicity check |
-| JSON-LD context | ☐ | Published at specified URL |
-| Test vectors | ☐ | All types validated |
-| Security review | ☐ | External audit |
-| Privacy review | ☐ | Social graph analysis |
+| Field | Classification | Authorization Level Required |
+|---|---|---|
+| `sealVersion` | Always Disclosed | public |
+| `sealTimestamp` | Always Disclosed | public |
+| `id` | Always Disclosed | public |
+| `issuer` | Always Disclosed | public |
+| `eventVector.what.productIdentifiers` | Always Disclosed | public |
+| `eventVector.what.classifications` | Selectively Disclosable | partner |
+| `eventVector.what.batchOrLot` | Selectively Disclosable | partner |
+| `eventVector.what.expiryDate` | Selectively Disclosable | partner |
+| `eventVector.what.quantity` | Selectively Disclosable | partner |
+| `eventVector.what.description` | Selectively Disclosable | partner |
+| `eventVector.when.eventTime` | Always Disclosed | public |
+| `eventVector.when.timezone` | Always Disclosed | public |
+| `eventVector.when.recordedAt` | Selectively Disclosable | regulatory |
+| `eventVector.where.jurisdiction` | Always Disclosed | public |
+| `eventVector.where.readPoint` | Selectively Disclosable | partner |
+| `eventVector.where.businessLocation` | Selectively Disclosable | partner |
+| `eventVector.where.geoCoordinates` | Selectively Disclosable | regulatory |
+| `eventVector.who.actorDid` | Always Disclosed | public |
+| `eventVector.who.actorRole` | Always Disclosed | public |
+| `eventVector.who.actorLicense` | Selectively Disclosable | regulatory |
+| `eventVector.how.eventType` | Always Disclosed | public |
+| `eventVector.how.disposition` | Always Disclosed | public |
+| `eventVector.how.businessStep` | Selectively Disclosable | partner |
+| `extensions.+Dn.*` | Selectively Disclosable | partner (field-specific overrides may apply) |
+| `chainOfCustody.chainId` | Always Disclosed | public |
+| `chainOfCustody.sequenceNumber` | Selectively Disclosable | partner |
+| `chainOfCustody.parentSeals` | Selectively Disclosable | partner |
+| `chainOfCustody.childSeals` | Selectively Disclosable | partner |
+| `correctionOf` | Always Disclosed | public |
