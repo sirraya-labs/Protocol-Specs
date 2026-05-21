@@ -8,7 +8,8 @@ title: DataIntegrityGroth16Proof2026 Cryptosuite Specification v1.0
 
 
 **Editors:**  
-[Editor Names and Affiliations]
+Amir Hameed Mir Sirraya Labs
+Irtiqa Latif Sirraya Labs
 
 
 ---
