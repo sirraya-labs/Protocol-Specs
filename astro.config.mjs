@@ -97,6 +97,7 @@ export default defineConfig({
           items: [
             { label: 'DID Recovery Spec', slug: 'did-kr/did-recovery' },
             { label: 'DID Threat Model', slug: 'did-kr/threat-model' },
+            { label: ' DataIntegrityGroth16Proof2026', slug: 'did-kr/DataIntegrityGroth16Proof2026' },
           ],
         },
         {
