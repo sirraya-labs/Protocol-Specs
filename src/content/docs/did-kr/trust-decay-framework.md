@@ -1,6 +1,4 @@
-Here is the Trust Decay Framework specification revised with the requested title and description format.
 
-```markdown
 ---
 title: Trust Decay Framework Specification (TDF)
 description: A Confidence-Based Classification System for Digital Credentials — Time-Decay Mechanics, Cryptographic Heartbeats, Zero-Knowledge Risk Proofs, and Privacy-Preserving Trust Assessment
