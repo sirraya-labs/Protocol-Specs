@@ -96,6 +96,7 @@ export default defineConfig({
           collapsed: true,
           items: [
             { label: 'DID Recovery Spec', slug: 'did-kr/did-recovery' },
+            { label: 'Trust Decay Framework', slug: 'did-kr/trust-decay-framework' },
             { label: 'DID Threat Model', slug: 'did-kr/threat-model' },
             { label: ' DataIntegrityGroth16Proof2026', slug: 'did-kr/zkp' },
           ],
